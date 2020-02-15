@@ -1,0 +1,1400 @@
+---
+title: "practice"
+author: "izunyan"
+date: "`r format(Sys.time(), '%Y/%m/%d')`"
+output:
+  html_document: 
+    toc: TRUE
+    toc_float: true
+    number_sections: true
+    theme: readable
+    highlight: pygments
+    css: custom.css
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+# markdownのメモ
+
+* ★のついたチャンクはそれ以降の実行に必要なので必ず実行
+
+## YAMLヘッダ
+```{r eval = FALSE}
+# 自動で更新時の日時に
+date: "`r format(Sys.time(), '%Y/%m/%d')`"
+
+# このHTMLで使ったoutput:以下の設定
+html_document:
+    toc: TRUE             # 目次
+    toc_float: true       # 目次のフロート
+    number_sections: true # 自動でセクションナンバー付与
+    theme: readable       #
+    highlight: pygments   #
+    css: custom.css       # 見栄えの細かい設定
+```
+
+* theme: の種類
+
+> default, cerulean, journal, flatly, readable, spacelab,   
+> united, cosmo, lumen, paper, sandstone, simplex, yeti  
+
+* highlight: の種類
+
+> default, tango, pygments, kate, monochrome,   
+> espresso, zenburn, haddock, textmate  
+
+* 本rmdファイルでのcssの設定対象
+  - 引用ブロックのフォントサイズ
+
+## chunkの全体設定
+```{r eval = FALSE}
+# 全体 
+{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+* rmdファイル内のすべてのチャンクの設定を一括で
+
+* ここの設定
+  - `{r eval = FALSE}`とすると，コードは表示されるが実行はされない
+
+> echo - Display code in output document (default = TRUE)   コードをアウトプットに表示  
+> eval - Run code in chunk (default = TRUE) チャンクを実行  
+> include - Include chunk in doc after running (default = TRUE)  
+
+
+
+
+# データハンドリング
+## 変数作成
+### ★パッケージの読み込み
+```{r message=FALSE}
+library(tidyverse)
+library(psych)
+library(skimr) # データセットの要約を詳細に確認するため
+library(knitr)
+library(janitor)
+```
+
+### bfiデータの変数一覧
+```{r}
+names(bfi)
+```
+
+* データの説明
+  + 国際パーソナリティ項目プールからの2800名分のデータ
+  + パーソナリティに関する25項目に加え，性，教育歴，年齢の変数もあり
+
+* 因子
+  + Agree: A1からA5
+  + Conscientious: C1からC5
+  + Extraversion: E1からE5
+  + Neuroticism: N1からN5
+  + Openness: O1からO5
+
+* 因子の点数のためのコーディング
+
+> keys.list <- list(agree=c("-A1","A2","A3","A4","A5"),
+>                  conscientious=c("C1","C2","C3","-C4","-C5"),
+>                  extraversion=c("-E1","-E2","E3","E4","E5"),
+>                  neuroticism=c("N1","N2","N3","N4","N5"), 
+>                  openness = c("O1","-O2","O3","O4","-O5")) 
+ 
+* 回答選択肢
+  + 1 Very Inaccurate 
+  + 2 Moderately Inaccurate 
+  + 3 Slightly Inaccurate 
+  + 4 Slightly Accurate 
+  + 5 Moderately Accurate 
+  + 6 Very Accurate
+
+
+### ★変数の選択とtibble形式への変換
+
+* 以下のコードでbfi_aのデータセットを使うので，ここの実行は必須
+
+```{r warning=FALSE, paged.print=FALSE}
+bfi_a <- bfi %>%
+  select(A1:A5,gender,education,age) %>% 
+  as_tibble()
+
+bfi_a
+```
+
+### 変数の選択
+```{r}
+var_a <- c("A1","A5")
+
+bfi_a %>% select(var_a)
+bfi_a %>% select(-one_of(var_a)) # var_aのリスト以外を選ぶ
+```
+
+### ケースの選択
+```{r}
+bfi_a %>% 
+  filter(A1 %in% c(1,2,3))
+
+bfi_a %>% 
+  filter(!(A1 %in% c(1,2,3))) # A1が1-3以外 
+```
+
+
+### ★因子型への変換，水準名の変更
+
+```{r}
+bfi_a <- 
+  bfi_a %>% 
+  mutate_at(c("gender", "education"), factor) %>% 
+  mutate(gender = fct_recode(gender, male   = "1", 
+                                     female = "2"),
+         education = fct_recode(education, "HS" = "1",
+                                           "finished HS" = "2",
+                                           "some college" = "3",
+                                           "college graduate" = "4",
+                                           "graduate degree" = "5"
+                                )
+  )
+```
+
+
+#### 要約統計量算出
+
+* ~~要約に便利な`skim()`を使っているが，htmlにはヒストグラムがうまく表示されないので省略~~
+
+* skimr 2.0.0 (2019-11-12)からいろいろ改善したみたい！
+
+```{r}
+skim(bfi_a)
+
+# 以下はskimr 1.0.6 (2019-05-27)までのコード
+# skimr::skim_with(numeric = list(hist = NULL),
+#           integer = list(hist = NULL)) # ヒストグラム非表示に
+# skimr::skim(bfi_a) 
+
+# データフレームに
+# bfi_a_summary <- 
+# bfi_a %>%
+#   group_by(gender) %>% # 層別
+# skimr::skim_to_wide()
+# 
+# bfi_a_summary
+
+
+# 基本統計量をexcelファイルに出力
+# writexl::write_xlsx(bfi_a_summary, "result/bfi_a_summary.xlsx")
+```
+
+
+### 欠損値の数一覧
+```{r}
+bfi_a %>% 
+  summarise_at(vars(A1:A5),
+    list(~sum(is.na(.)))
+  ) %>% 
+  gather()
+
+bfi_a %>% 
+  summarise_all(list(
+                     ~sum(is.na(.))
+                    )
+                ) %>% 
+  gather()
+```
+
+
+### ★逆転項目の反転と合計得点の作成
+```{r}
+bfi_a <- bfi_a %>% 
+  mutate(A1r = recode(A1, `1` = 6, `2` = 5, `3` = 4, 
+                          `4` = 3, `5` = 2, `6` = 1),
+         total_a = A1r + A2 + A3 + A4 + A5)
+
+# 確認
+bfi_a %>%
+  select(A1, A1r, A2:A5, total_a) 
+
+
+
+
+```
+
+
+#### 逆転項目の反転と合計得点の作成(すべて)
+
+> keys.list <- list(agree=c("-A1","A2","A3","A4","A5"),
+>                  conscientious=c("C1","C2","C3","-C4","-C5"),
+>                  extraversion=c("-EE11","-E2","E3","E4","E5"),
+>                  neuroticism=c("N1","N2","N3","N4","N5"), 
+>                  openness = c("O1","-O2","O3","O4","-O5")) 
+
+
+```{r}
+bfi_added <- 
+  bfi %>% 
+  mutate_at(vars(A1, C4, C5, E1, E2, O2, O5),
+            list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
+                          `4` = 3, `5` = 2, `6` = 1))
+  )
+```
+
+##### 確認
+```{r}
+bfi_added %>% count(A1, A1_r)
+bfi_added %>% count(O2, O2_r)
+```
+
+#### 合計得点の作成
+```{r}
+bfi_added <- 
+  bfi_added %>% 
+  mutate(agree = A1_r + A2 + A3 + A4 + A5,
+         conscientious= C1 + C2 + C3 + C4_r + C5_r,
+         extraversion= -E1 + E2_r + E3 + E4 + E5,
+         neuroticism= N1 + N2 + N3 + N4 + N5, 
+         openness =  O1 + O2_r + O3 + O4 + O5_r
+  )
+
+bfi_added_cor <- 
+  bfi_added %>% 
+  select(agree:openness)
+
+cor(bfi_added_cor, use = "complete.obs") %>% round(digits = 1)
+
+rm(bfi_added_cor)
+```
+
+
+
+### 合計得点の作成(関数)
+```{r}
+names(bfi_a)
+
+bfi_a <- 
+bfi_a %>% 
+  mutate(total_a2 = rowSums(.[c(2:5, 9)])) # na.rm = TRUEにするとNAは0扱いになる
+
+# 確認
+bfi_a %>%
+  select(A1r, A2:A5, total_a, total_a2) 
+```
+
+### 文字の指定によるデータの表示
+```{r}
+bfi_a %>% 
+  count(education) %>% 
+  filter(str_detect(education, "college"))
+```
+
+### 欠損のある得点の表示
+```{r  warning=FALSE, paged.print=FALSE}
+bfi_a %>%
+  select(A1, A1r, A2:A5, total_a, total_a2) %>% 
+  filter(is.na(total_a)) %>% 
+  print(n = 10)
+```
+
+### 欠損値の置き換え
+```{r}
+bfi_anm <- 
+bfi_a %>% 
+  mutate(education = replace_na(education, "unknown"), # 因子型には使えない？
+              A1nm = replace_na(A1, "不明"),           # 文字型になる
+              A2nm = replace_na(A2, "不明"))           # 文字型になる
+  
+bfi_anm %>% count(education)
+bfi_anm %>% count(A1nm)
+```
+
+### 特定の値を欠損値にする
+```{r}
+bfi_anm %>% 
+  mutate(A1nmr = na_if(A1nm, "不明")) %>% 
+  count(A1nmr)
+
+bfi_arm2 <- 
+bfi_anm %>% 
+  mutate_at(vars(A1nm, A2nm),
+            list(~na_if(., "不明"))
+  )
+
+bfi_arm2 %>% count(A1nm)
+bfi_arm2 %>% count(A2nm)
+
+
+
+rm(bfi_anm, bfi_arm2)
+```
+
+
+## 年齢層変数作成
+```{r}
+bfi_a <- 
+bfi_a %>% 
+  mutate(agec = case_when(
+          age < 20              ~ "20歳未満", 
+          age >= 20  & age < 30 ~ "30歳未満", 
+          age >= 30  & age < 40 ~ "40歳未満",
+          age >= 40  & age < 50 ~ "50歳未満",
+          age >= 50  & age < 60 ~ "60歳未満",
+          age >= 60             ~ "60歳以上"  
+  ))
+
+bfi_a %>% 
+  count(age, agec)
+```
+
+### 年齢層変数作成（欠損値がある場合）
+```{r}
+# 特定範囲の値を欠損値に
+bfi_am <- 
+  bfi_a %>% 
+  mutate(age = case_when(
+            age <  10 ~ NA_integer_, # 10歳未満はNA，整数の場合はこれ
+            age >= 70 ~ NA_integer_, # 70歳はNA
+            TRUE      ~ age)         # その他はageそのまま
+         )
+
+bfi_am <- 
+bfi_am %>% 
+  mutate(agec = case_when(
+          age <  20             ~ "20歳未満", 
+          age >= 20  & age < 30 ~ "30歳未満", 
+          age >= 30  & age < 40 ~ "40歳未満",
+          age >= 40  & age < 50 ~ "50歳未満",
+          age >= 50  & age < 60 ~ "60歳未満",
+          age >= 60             ~ "60歳以上",
+          is.na(age)            ~ "年齢不明" 
+  ))
+
+bfi_am %>% 
+  count(age, agec)
+```
+
+### 年齢層変数作成(cut_intervalで自動的に)
+```{r}
+# カテゴリの各区間の長さが等しくなるように
+bfi_a %>% 
+  mutate(agec2 = cut_interval(age, 5)) %>% # 分割の数
+  count(agec2)
+
+
+# カテゴリの各区間の人数が等しくなるように
+bfi_a %>% 
+  mutate(agec2 = cut_number(age, 5)) %>% # 分割の数
+  count(agec2)
+
+# カテゴリの各区間の長さを指定
+bfi_a %>% 
+  mutate(agec2 = cut_width(age, width = 20, center = 10)) %>% 
+                     # width = 区間の長さ, デフォルトだとcenter = 0になってしまうので10に
+  count(agec2)
+
+
+```
+## データの連結まわり
+### idの作成
+```{r}
+bfi_a <- 
+bfi_a %>% 
+  mutate(id = row_number())
+
+bfi_a <- 
+bfi_a %>% select(id, everything()) 
+
+bfi_a
+```
+
+### 一致したケースのみ残す: inner_join
+```{r}
+bfi_a_1310 <- 
+bfi_a %>% 
+  slice(c(1,3,10)) %>% 
+  select(id, A1)
+
+bfi_a_1310
+
+bfi_a_1_5 <- 
+bfi_a %>% 
+  slice(1:5) %>% 
+  select(id, gender, age)
+
+bfi_a_1_5
+
+inner_join(bfi_a_1_5, bfi_a_1310)
+
+```
+
+### 一致したケースのみ残して連結先の変数は連結せず: semi_join
+```{r}
+semi_join(bfi_a_1_5, bfi_a_1310)
+
+```
+
+
+### 一致したケース以外の連結元データのみに
+```{r}
+anti_join(bfi_a_1_5, bfi_a_1310)
+```
+
+
+```{r eval=FALSE, include=FALSE}
+### （作成中）教育歴ごとにデータフレーム分割してリストに
+
+bfi_a_list <- 
+split(bfi_a, bfi_a$education)
+
+# リストの各要素の名前取得
+names(bfi_a_list)
+```
+
+## 変数のrename
+
+### 2018年データと2019年データを作成
+
+* 面倒なのでデータの中身は同じものとする。yearだけ違う
+
+```{r}
+bfi_a_2018 <- 
+bfi_a %>% 
+  slice(1:5) %>% #小さくするため最初の5名のみ
+  select(id, A1:A3, gender) %>% 
+  mutate(year = 2018)
+
+bfi_a_2019 <- 
+bfi_a %>% 
+  slice(1:5) %>% 
+  select(id, A1:A3, gender) %>% 
+  mutate(year = 2019)
+
+bfi_a_2018
+bfi_a_2019
+```
+
+
+### 年ごとのデータフレームにそれぞれの年の値を追加して横に連結
+
+* 数が少なければ手動でできるが，多いと大変
+
+```{r}
+bfi_a_2018w <- 
+  bfi_a_2018 %>% 
+  rename_at(vars(-id, -gender, -year),
+            list(~str_c(., "_18"))) %>% 
+  select(-year)
+
+bfi_a_2019w <- 
+  bfi_a_2019 %>% 
+  rename_at(vars(-id, -gender),
+            list(~str_c(., "_19")))
+
+bfi_a_all <- 
+  full_join(bfi_a_2018w, bfi_a_2019w) %>% 
+  select(id, gender,  everything())
+
+bfi_a_all
+```
+
+
+### 個々のデータフレームをlistにまとめて自動で変数名変換
+```{r}
+# リスト作成
+bfi_a_list <- list(bfi_a_2018, bfi_a_2019)
+names(bfi_a_list)
+
+# リストの各要素に名前
+names(bfi_a_list) <- c("bfi_a_2018", "bfi_a_2019")
+names(bfi_a_list)
+
+
+# リストの各要素を変数名の接尾辞に
+for (i in names(bfi_a_list)){
+  colnames(bfi_a_list[[i]]) <- c("id", 
+                               str_c("A1", "_", i),
+                               str_c("A2", "_", i),
+                               str_c("A3", "_", i),
+                               "gender", "year"
+                                )
+}
+
+# リスト内のデータフレームを横に連結
+bfi_a_all_wide <- 
+  bfi_a_list %>% 
+  reduce(full_join, by = c("id", "gender"))
+
+# 変数名からbfi_aを取る
+bfi_a_all_wide <- 
+  bfi_a_all_wide %>% 
+  select(-starts_with("year")) %>% 
+  rename_at(vars(matches("bfi_a")),
+            list(~str_replace(., "bfi_a_", "")))
+
+bfi_a_all_wide
+```
+
+
+## リストの扱い
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+# データフレームの表示
+```{r}
+bfi_s <- 
+ bfi %>% 
+ slice(1:15) %>% 
+ select(A1:A5, gender, education, age)
+```
+
+
+## kable
+
+```{r}
+kable(bfi_s)
+```
+
+## formattable::formattable
+```{r}
+formattable::formattable(bfi_s)
+
+```
+
+
+
+## DT::datatable
+```{r}
+DT::datatable(bfi_s)
+```
+
+
+# 基本統計量等を一気に確認
+## summarytools::dfSummary
+
+* うまく表示されないので出力なし
+
+```{r ecoh = TRUE, eval=FALSE, include=FALSE, results='asis'}
+library(summarytools)
+# dfSummary(bfi_a)
+
+# もっときれいに
+dfSummary(bfi_a, style = "grid", plain.ascii = FALSE,
+          varnumbers = FALSE, valid.col = FALSE, 
+          graph.magnif = 0.75, tmp.img.dir = "./img")
+
+# viewerまたはhtmlで出力したいとき
+# view(dfSummary(bfi_a))
+```
+
+## table1パッケージ
+
+```{r}
+table1::table1(~ A1 + A2 + A3 + age + education | gender, data = bfi_a)
+```
+
+
+
+# 平均値の算出
+## 変数個別
+### summarise
+```{r}
+bfi %>%
+  summarise(A1 = mean(A1, na.rm = TRUE),
+            A2 = mean(A2, na.rm = TRUE))
+```
+
+### summarise_at
+```{r}
+bfi %>%
+  summarise_at(vars(A1, A2), 
+               mean, na.rm = TRUE)
+```
+
+### summarise_at，関数も個別に(1)
+```{r}
+bfi %>% 
+  summarise_at(vars(A1, A2), 
+               list(mean, sd), 
+               na.rm = TRUE)
+
+
+# bfi %>%
+# summarise_at(vars(A1, A2),
+#              funs(mean,sd),
+#              na.rm = TRUE)
+
+# こちらでもOK
+# bfi %>%
+#   summarise_at(vars(A1, A2),funs(mean(., na.rm = TRUE),
+#                                     sd(., na.rm = TRUE)
+#                                   )
+#   ) 
+```
+
+### summarise_at，関数も個別に(2)
+
+* ※現在は動かないので要修正
+* nはリストワイズ
+
+```{r eval=FALSE, include=FALSE}
+bfi %>%
+  drop_na(A1,A2) %>% 
+  summarise_at(vars(A1, A2),
+               list(mean,
+                    sd,
+                    n()
+                    )
+               )
+
+# bfi %>%
+#   drop_na(A1,A2) %>% 
+#   summarise_at(vars(A1, A2),
+#                funs(mean,
+#                     sd,
+#                     n()
+#                     )
+#                )
+```
+
+### summarise_at，関数も個別に(3)
+
+* nはペアワイズ
+
+```{r}
+bfi %>%
+  summarise_at(vars(A1, A2),
+               list(~mean(., na.rm = TRUE),
+                    ~sd(., na.rm = TRUE),
+                n = ~sum(!is.na(.))    # 欠損のない行の合計
+                    )
+               )
+
+# bfi %>%
+#   summarise_at(vars(A1, A2),
+#                funs(mean(., na.rm = TRUE),
+#                     sd(., na.rm = TRUE),
+#                     n = sum(!is.na(.))    # 欠損のない行の合計
+#                     )
+#                )
+```
+
+### summarise_all, 選択した変数すべて
+```{r}
+bfi %>%
+  select(A1:A5) %>% 
+  summarise_all(mean, na.rm = TRUE)
+```
+
+## 層別
+```{r}
+bfi %>%
+  select(A1:A5, gender) %>% 
+  group_by(gender) %>% 
+  summarise_all(mean, na.rm = TRUE)
+```
+
+### 層別および全体の値を一度に算出
+```{r}
+bfi_a %>% # 性別の結果
+  group_by(gender) %>% 
+  summarise_at(vars(A1, A2),
+               list(~mean(., na.rm = TRUE),
+                      ~sd(., na.rm = TRUE),
+                 n = ~sum(!is.na(.))
+                    )
+               ) %>% 
+  bind_rows(.,         # 上で作ったデータフレームがここに
+            bfi_a %>%  # 全体の結果
+                summarise_at(vars(A1, A2),
+                             list(~mean(., na.rm = TRUE),
+                                    ~sd(., na.rm = TRUE),
+                               n = ~sum(!is.na(.))
+                                 )
+                             ) %>% 
+              mutate(gender = "all") # 最初に作ったデータフレームにgenderの列があるため
+            )
+
+
+```
+
+
+### 要約統計量を表示させたい形式に整形する
+#### 平均値と標準偏差を列に
+```{r}
+bfi %>% 
+summarise_at(vars(A1, A2), 
+             list(mean, sd), 
+             na.rm = TRUE) %>% 
+  gather() %>% 
+  separate(key, into = c("var_name", "summarised"), sep = "_") %>% 
+  spread(summarised, value)
+```
+
+#### 平均値と標準偏差を行に
+```{r}
+bfi_m <- 
+bfi %>% 
+summarise_at(vars(A1, A2), 
+             mean, na.rm = TRUE) 
+
+bfi_sd <- 
+bfi %>% summarise_at(vars(A1, A2), 
+                     sd, na.rm = TRUE) 
+
+bind_rows(bfi_m, bfi_sd) %>%
+  mutate(name = c("mean", "sd")) %>% 
+  select(name, everything())
+
+# 次の方法でもnameを作れる
+# add_column(name = c("mean", "sd"), .before = "A2")
+```
+
+  
+# 頻度の確認
+## 1つの項目の頻度を複数層別で確認するためにデータ構造変換
+
+* nestした列の名前を指定
+* unnestでcols = をつける
+
+```{r}
+  bfi %>%
+  nest(data = -c(gender, education)) %>% 
+  mutate(freq =
+           map(data, ~ tabyl(.x, A1))) %>% 
+  select(-data) %>% 
+  unnest(cols = c(freq)) %>% 
+  drop_na(education) %>% 
+  as_tibble()
+```
+
+
+
+## 複数の項目の頻度を複数層別で確認するためにデータ構造変換
+```{r}
+bfi_l <-
+  bfi %>%
+  as_tibble() %>%                    # tibble形式に変換
+  select(gender,education,A1,A2) %>% # 変数を選択
+  drop_na() %>%                      # 欠損は削除
+  gather(A1:A2,            # longにする変数A1:A2を指定
+         key = variables,
+         value = score)    # key = に変数名を識別する変数、value = に変数の中身を入れる
+
+bfi_l
+```
+
+### 確認
+
+* 人数が倍になってることを確認
+
+```{r}
+bfi_l %>%
+  count(variables)
+```
+
+### nestする
+```{r}
+bfi_l_nest <-
+  bfi_l %>%
+  nest(-c(gender,education,variables)) # 層別にする変数を指定
+
+# データ確認
+bfi_l_nest %>%
+  arrange(variables,gender,education)
+```
+
+### 設問ごとの回答割合
+
+* dataの列にあるデータフレームのlistに、tabyl(score)をそれぞれ適用し、freqの列に格納
+
+```{r}
+bfi_l_nest <-
+bfi_l_nest %>%
+  mutate(freq =
+           map(data, ~ tabyl(.x, score))) # データフレームは`.x`で表す; ()内は.$scoreでも動く
+
+bfi_l_nest
+```
+
+### それぞれの結果を出力
+```{r}
+bfi_l_unest <-
+bfi_l_nest %>%
+  unnest(freq)
+
+bfi_l_unest
+```
+
+#### 一致しているか確認
+```{r}
+bfi %>%
+  drop_na(gender,education,A1,A2) %>%  # nestデータと同様の条件にするため
+  filter(gender == 1 & education == 1) %>%
+  tabyl(A1)
+
+# ネストしたデータセットから
+bfi_l_unest %>%
+  filter(gender == 1 & education == 1 & variables == "A1")
+
+
+bfi %>% 
+  drop_na(gender,education,A1,A2) %>%
+  filter(gender == 2 & education == 3) %>%
+  tabyl(A2)
+
+bfi_l_unest %>%
+  filter(gender == 2 & education == 3 & variables == "A2")
+```
+
+## 項目の回答選択肢を列名にするように変換
+```{r}
+bfi_l_nest <-
+  bfi_l_nest %>%
+  mutate(freq =
+           map(freq, ~ select(.x, -n)),  # nの列を削除
+         freq =                          # wideに変換
+           map(freq, ~ spread(.x, key = score, value = percent))
+  )
+
+bfi_l_unestw <-
+bfi_l_nest %>%
+  unnest(freq)
+
+bfi_l_unestw
+```
+
+
+# 可視化
+## 層別平均値の棒グラフ
+```{r}
+mean_total_a <- 
+bfi_a %>% 
+  group_by(education) %>% 
+  summarise(total_a = mean(total_a, na.rm = TRUE)) 
+
+ggplot(mean_total_a) +
+  geom_col(aes(x = education, y = total_a, fill = education))
+```
+
+### 平均値の高い順に並び変え
+```{r}
+ggplot(mean_total_a) +
+  geom_col(aes(x = fct_reorder(education, total_a, .desc = TRUE),
+               y = total_a, fill = education))
+```
+
+### ラベル付与して見栄えを整える
+```{r}
+ggplot(mean_total_a, aes(x = education, y = total_a, fill = education)) +
+  geom_col() +
+  geom_text(aes(label = round(total_a, 1)), vjust = -1) +
+  scale_y_continuous(limits = c(0,25))
+```
+
+*  `geom_text()`でラベル表示。`round()`で小数点第1位までにして，`vjust = -1`で棒グラフの上端から浮かせる設定に
+* `scale_y_continuous()`で`limits =`により，y軸の表示範囲をラベルが全部表示できるように拡張
+
+
+### ラベル付与して見栄えを整える(2)
+```{r}
+ggplot(mean_total_a, aes(x = education, y = total_a, fill = education)) +
+  geom_col() +
+  geom_text(aes(label = round(total_a, 1)), vjust = 1.5,
+            color = "white") +
+  # scale_y_continuous(limits = c(0,25)) +
+  theme(axis.text.x = element_text(angle = 15, vjust = 0.5))
+```
+
+### グラフの色を変更
+```{r}
+ggplot(mean_total_a) +
+  geom_col(aes(x = education, y = total_a, fill = education)) +
+  scale_fill_brewer(palette = "Pastel1")
+```
+
+### 縦軸の数値の範囲変更
+```{r}
+ggplot(mean_total_a) +
+  geom_col(aes(x = education, y = total_a, fill = education)) +
+  scale_y_continuous(breaks = seq(15, 25, by = 3)) + # 横軸のラベル表示を15から25まで3ずつ
+  coord_cartesian(ylim = c(15,25))                   # 横軸のデータ範囲表示を15から25までに限定
+```
+
+
+## 層別（2要因）の平均値の棒グラフ
+```{r}
+mean_total_b <- 
+bfi_a %>% 
+  group_by(gender,education) %>% 
+  summarise(total_a = mean(total_a, na.rm = TRUE)) %>% 
+  ungroup()
+
+ggplot(mean_total_b, aes(x = education, y = total_a, fill = gender)) +
+  geom_col(position = "dodge") +
+  geom_text(aes(label = round(total_a, 1)), vjust = -1, 
+            position = position_dodge(width = 0.9)) +
+  scale_y_continuous(limits = c(0,25))
+```
+
+
+* `fill = `2つ目の要因を指定しただけだと，棒グラフは重なったまま。`geom_col(position = "dodge")`で棒グラフを区分
+* `geom_text()`に引数`position = position_dodge( )`を指定すると，ラベルも区分されたグラフごとに表示される。デフォルトだと重なってしまっている。
+
+### 層別（2要因）の平均値の棒グラフ(femaleの値で昇順ソート)
+
+* NAは対象外
+
+```{r}
+
+ggplot(mean_total_b, aes(x = fct_reorder2(education, gender, total_a,                                         .desc = FALSE),
+                         y = total_a, fill = gender)) +
+  geom_col(position = "dodge") +
+  geom_text(aes(label = round(total_a, 1)), vjust = -1, 
+            position = position_dodge(width = 0.9)) +
+  scale_y_continuous(limits = c(0,25))
+```
+
+
+### 層別（2要因）の平均値の棒グラフ：基準線付き
+
+* 線に被ってしまうラベルの位置調整
+
+#### 被ったバージョン
+```{r}
+mean_all <- 
+  bfi_a %>% 
+  summarise(total_a = mean(total_a, na.rm = TRUE)) %>% 
+  pull()
+
+mean_total_b <- 
+bfi_a %>% 
+  group_by(gender,education) %>% 
+  summarise(total_a = mean(total_a, na.rm = TRUE)) 
+
+ggplot(mean_total_b, aes(x = education, y = total_a, fill = gender)) +
+  geom_col(position = "dodge") +
+  geom_hline(yintercept = mean_all, linetype = "dotted", 
+             color = "gray50", size = 1) +
+  geom_text(aes(label = round(total_a, 1)), vjust = -1, 
+            position = position_dodge(width = 0.9)) +
+  annotate("text", x = 6.3, y = mean_all, vjust = -1,   # 全体平均値表示
+           label = round(mean_all, 1)) +
+  annotate("text", x = 6.3, y = mean_all + 1.2, vjust = -1,  # "全体"の文字表示
+           label = "全体") +
+  scale_y_continuous(limits = c(0,25))
+```
+
+
+#### 被ってないバージョン
+```{r}
+ggplot(mean_total_b, aes(x = education, y = total_a, fill = gender)) +
+  geom_col(position = "dodge") +
+  geom_hline(yintercept = mean_all, linetype = "dotted", 
+             color = "gray50", size = 1) +
+  geom_text(aes(label = round(total_a, 1),
+                vjust = case_when(total_a <= (mean_all - 1) &     # 平均より-2点から-1点
+                                  total_a >= (mean_all - 2) ~ -2, # 低かったら位置は-2
+                                                       TRUE ~ -1) # その他の位置は-1
+                ), 
+            position = position_dodge(width = 0.9)) +
+  annotate("text", x = 6.3, y = mean_all, vjust = -1, 
+           label = round(mean_all, 1)) +
+  annotate("text", x = 6.3, y = mean_all + 1.2, vjust = -1, 
+           label = "全体") +
+  scale_y_continuous(limits = c(0,25))
+```
+
+## legendのラベルの順序変更
+```{r eval=FALSE, include=FALSE}
+total_a_gender <- 
+bfi_a %>% 
+ group_by(gender) %>% 
+  summarise(mean_total_a = mean(total_a, na.rm = TRUE))
+
+ggplot(total_a_gender) +
+  geom_col(aes(y = mean_total_a, x = gender, fill = gender))
+
+ggplot(total_a_gender) +
+  geom_col(aes(y = mean_total_a, x = gender, fill = gender)) +
+  scale_fill_discrete(breaks = c("female", "male"))
+
+ggplot(total_a_gender) +
+  geom_point(aes(y = mean_total_a, x = gender, shape = gender), size = 15) 
+
+
+ggplot(total_a_gender) +
+  geom_point(aes(y = mean_total_a, x = gender, shape = gender), size = 15)+
+  scale_shape_discrete(breaks = c("female", "male"))
+
+# A1to5_gender <- 
+# bfi_a %>% 
+#  group_by(gender) %>% 
+#   summarise_at(vars(A1r, A2:A5),
+#     list(~mean(., na.rm = TRUE))
+#     )
+# 
+# A1to5_gender_long <- 
+#   A1to5_gender %>% 
+#   gather(A1r:A5, 
+#          key = variables,
+#         value = mean)
+# 
+# ggplot(A1to5_gender_long) +
+#   geom_line(aes(variables, mean))
+
+```
+
+
+
+## ヒストグラム（カウント数ラベル付き）
+```{r}
+ggplot(bfi, aes(A1)) +
+  geom_histogram(bins = 6, color = "white") +      # binsは棒の数，colorは棒の線
+  scale_x_continuous(breaks = seq(1, 6, by = 1)) + # 横軸の表示を1から6まで１ずつ
+  stat_bin(bins = 6, geom="text", aes(label=..count..), vjust=-1.5) + # ラベル付与
+  coord_cartesian(ylim = c(0,1000)) # デフォルトだとラベルが隠れてしまうので，縦軸広げる
+
+```
+
+* 縦軸表示の変更は`scale_y_continuous(limits = c(0, 1000))`でもいけた
+
+
+## facet_wrapで複数の図を一度に描くときに，複数ページに分割して表示する
+
+* 大量に図を描くと1つ1つの図が小さくなって分かりにくい時があります。
+
+```{r}
+bfi_long <- 
+bfi %>%
+  select(A1:E5, gender:age) %>% 
+  gather(A1:E5, key = "items", value = "answer") %>% 
+  as_tibble()
+
+ggplot(bfi_long) +
+  geom_histogram(aes(answer), bins = 6) + # binsはデフォルトが30なので水準数と同じに設定
+  scale_x_continuous(breaks = seq(1,6, by = 1)) + # x軸の値をすべて表示 1から6まで1ごと
+  facet_wrap( ~ items)
+```
+
+* ggforceパッケージを使えば分割して表示できます
+    + ここでは1ページ目を表示
+
+```{r}
+library(ggforce)
+ggplot(bfi_long) +
+  geom_histogram(aes(answer), bins = 6) +
+  scale_x_continuous(breaks = seq(1,6, by = 1)) +
+  facet_wrap_paginate(~ items, nrow = 2, ncol = 3,  # ここに行と列の個数を指定
+                      scales = "free", page = 1)    # 何ページ目を表示するか指定 
+
+```
+
+* for loopを使って一度にすべて表示させます
+    
+
+
+```{r}
+for(i in 1:4){      # 作成されるページ数の範囲を指定
+  print(
+    ggplot(bfi_long) +
+      geom_histogram(aes(answer), bins = 6) +
+      scale_x_continuous(breaks = seq(1,6, by = 1)) +
+      facet_wrap_paginate(~ items, nrow = 2, ncol = 2, 
+                          scales = "free", page = i)  
+  )
+}
+
+# 自動で作成されるページ数を計算したい場合
+# n_pages <- ceiling(
+#   length(levels(bfi_long$items))/ 6)
+
+```
+
+## 散布図
+
+* 散布図を描く意味があまりなさそうなデータなので図は省略
+
+```{r eval=FALSE, include=FALSE}
+ggplot(bfi_added) +
+  geom_point(aes(x = agree, y = extraversion, color = factor(gender)))
+
+```
+
+```{r eval=FALSE, include=FALSE}
+ggplot(bfi_added) +
+  geom_point(aes(x = agree, y = extraversion, color = factor(gender))) +
+  facet_wrap(vars(gender))
+
+```
+
+## 色がたくさん必要
+### RColorBrewerパッケージの既存パレット一覧
+```{r fig.width = 9, fig.height = 8}
+library(RColorBrewer)
+display.brewer.all()
+```
+
+### ユニバーサルカラー
+```{r}
+display.brewer.all(colorblindFriendly= TRUE)
+```
+
+### 色を増やす
+```{r}
+# デフォルトではPairedは12色のみ
+many_col <- brewer.pal(12, "Paired")
+many_col
+
+# 20色まで増やす
+many_col <- colorRampPalette(many_col)(20)
+many_col
+
+pie(rep(1, length(many_col)), col = many_col, main = "")
+
+```
+
+### デフォルトでたくさんあるpalsパッケージ
+```{r}
+library(pals)
+many_col <- colorRampPalette(glasbey())(32)
+pie(rep(1, length(many_col)), col = many_col, main = "")
+
+```
+
+
+## ワッフルチャート
+```{r}
+# waffleパッケージをここだけで一時的に読んでいるためwaffle::としている
+
+
+bfi %>% 
+  tabyl(gender)
+
+parts <- c(male = 33, female = 67)
+waffle::waffle(parts)
+```
+
+## 人型グラフ
+
+* 割合を人型の図の数で示す
+
+```{r}
+# personographパッケージをここだけで一時的に読んでいるためpersonograph::としている
+parts <- list(男性 = 0.33, 女性 = 0.67)
+personograph::personograph(parts)
+
+personograph::personograph(parts,
+                           colors = list(男性   = "darkorange",
+                                         女性 = "deepskyblue3"))
+```
+
+
+
+# 相関
+## ピアソンの積率相関
+```{r}
+cor(bfi$A2, bfi$A3, use = "complete.obs")
+```
+
+## 相関行列
+```{r}
+bfi %>% 
+select(A1:A5) %>% 
+cor(use = "complete.obs")
+```
+
+
+
+## ポリコリック相関
+
+* Polychoric correlation
+* 順序尺度と順序尺度の相関
+
+```{r}
+res <- 
+bfi %>% 
+  select(A2, A3) %>% 
+  polychoric( na.rm = TRUE)
+
+res
+
+res$rho
+
+# 相関係数だけを取り出す
+res$rho[1,2]
+
+# 因子型にした場合（結果は同じ）
+# bfi %>% 
+#   select(A2, A3) %>% 
+#   mutate_all(factor) %>% 
+#   polychoric( na.rm = TRUE)
+
+```
+
+
+
+## 点双列相関
+
+* point-biserial correlation
+* 連続量と2値の相関
+
+```{r}
+# ltmパッケージをここだけで一時的に読んでいるためltm::としている
+ltm::biserial.cor(bfi_a$total_a, bfi_a$gender, use = "complete.obs")
+```
+
+
+```{r}
+# ピアソンの積率相関で出した場合
+bfi_a <- 
+  bfi_a %>% 
+  mutate(gender_n = as.numeric(gender))
+
+cor(bfi_a$total_a, bfi_a$gender_n, use = "complete.obs")
+```
+
+
+# 層別回帰
+## 層別に重回帰
+### データフレームをネストする
+```{r reg}
+library(broom)
+
+ 
+bfi_n <- 
+bfi %>%
+  as_tibble %>% 
+  nest(-gender)
+
+bfi_n
+```
+
+### 回帰モデルをネストする
+
+* 上から読んでいったら，`Error: Corrupt x: no names`が出たので，`map()`とぶつかりそうなパッケージをここで外す
+
+```{r}
+detach("package:pals", unload=TRUE)
+# detach("package:maps", unload=TRUE) # 先にpalsを外さないと×
+```
+
+
+```{r}
+bfi_n <-
+bfi_n %>% 
+  mutate(
+    fit = map(data, ~ lm(A5 ~ A1 + A4, data = .))
+              ) 
+bfi_n
+
+
+## 古いやり方
+# fit <- 
+#   bfi %>% 
+#   group_by(gender) %>% 
+#   do(data = lm(A5 ~ A1 + A4 ,
+#                data = .) %>%
+#        tidy()
+#   ) 
+# res_fit <- 
+#   bfi_n %>% 
+#   unnest()
+
+```
+
+
+### ネストを解除して回帰係数を出力
+```{r}
+res_fit <-
+bfi_n %>%
+  mutate(fit = map(fit, tidy)) %>% 
+  unnest(fit) %>% 
+  select(-data)
+
+
+# tidyr 0.8.3までのやり方
+# res_fit <-
+# bfi_n %>%
+#   unnest(fit %>% map(tidy))
+
+res_fit
+```
+
+### ネストを解除してR二乗を出力
+```{r}
+bfi_n %>%
+  mutate(fit = map(fit, glance)) %>% 
+  unnest(fit) %>% 
+  select(-data)
+
+
+# bfi_n %>%
+#   unnest(fit %>% map(glance))
+```
+
+## 回帰係数を棒グラフで表示
+```{r}
+res_fit %>% 
+  filter(term != "(Intercept)") %>% 
+  ggplot(aes(x = term, y = estimate)) +
+  geom_col(fill = "blue") +
+  geom_text(aes(label = round(estimate,2),
+                hjust = if_else(estimate > 0, -0.5, 1.2) # 係数の値がマイナスだったら逆方向の位置に
+                )
+            ) +        
+    scale_y_continuous(limits = c(-0.2, 0.3)) +          # 軸の表示範囲を指定
+  theme(
+    axis.text.x = element_text(size = 12),               # x軸の文字の大きさ
+    axis.text.y = element_text(size = 12)) +             # y軸の文字の大きさ
+  labs(x = "設問", y = "回帰係数") +
+   coord_flip() +                                        # グラフを横向きに（x軸とy軸が入れ替わる）
+  facet_wrap(~ gender, ncol = 1) 
+```
+
+## 回帰係数と信頼区間を表示
+```{r}
+res_fit <-  
+bfi_n %>%
+  mutate(fit = map(fit, tidy, conf.int = TRUE)) %>% 
+  unnest(fit) %>% 
+  select(-data)
+
+
+# res_fit <-  
+# bfi_n %>%
+#   unnest(fit %>% map(tidy, conf.int = TRUE))
+
+
+res_fit %>% 
+  filter(term != "(Intercept)") %>% 
+  ggplot(aes(x = term, y = estimate)) +
+  geom_pointrange(aes(ymin = conf.low, ymax = conf.high)) +
+  geom_text(aes(label = round(estimate,2),
+                vjust = -1                        # 係数の値がマイナスだったら逆方向の位置に
+                )
+            ) +        
+  geom_hline(yintercept = 0) +                    # 係数が0の位置に線を表示
+  scale_y_continuous(limits = c(-0.2, 0.4)) +     # 軸の表示範囲を指定
+  theme(
+    axis.text.x = element_text(size = 12),        # x軸の文字の大きさ
+    axis.text.y = element_text(size = 12)) +      # y軸の文字の大きさ
+  labs(x = "設問", y = "回帰係数") +
+  coord_flip() +                                  # グラフを横向きに
+  facet_wrap(~ gender, ncol = 1) 
+```
+
+# パッケージ管理
+## 古いバージョンのパッケージをインストール
+
+* https://stackoverflow.com/questions/17082341/installing-older-version-of-r-package
+
+```{r eval= FALSE}
+library(devtools)
+install_version("ggplot2", version = "0.9.1", repos = "http://cran.us.r-project.org")
+```
+
