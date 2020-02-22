@@ -1,0 +1,3 @@
+"0","ggplot(bfi_added) +"
+"0","  geom_point(aes(x = agree, y = extraversion, color = factor(gender)))"
+"0",""

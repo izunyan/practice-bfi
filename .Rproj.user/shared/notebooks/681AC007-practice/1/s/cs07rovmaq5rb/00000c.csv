@@ -1,0 +1,4 @@
+"0","detach(""package:maps"", unload=TRUE)
+"
+"2"," ‘maps’ 名前空間はアンロード出来ません 
+   名前空間 ‘maps’ は ‘mapproj’ によってインポートされているのでアンロード出来ません "

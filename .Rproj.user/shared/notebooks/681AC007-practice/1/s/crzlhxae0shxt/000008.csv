@@ -1,0 +1,8 @@
+"0",""
+"0","bfi_arm2 <- "
+"0","bfi_anm %>% "
+"0","  mutate_at(vars(A1nm, A2nm),"
+"0","            list(~na_if(., ""不明""))"
+"0","  )"
+"0",""
+"0","bfi_arm2 %>% count(A1nm)"

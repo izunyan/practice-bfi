@@ -1,0 +1,4 @@
+"0","bfi_a %>% "
+"0","  count(education) %>% "
+"0","  filter(str_detect(education, ""college""))"
+"2","Factor `education` contains implicit NA, consider using `forcats::fct_explicit_na`"

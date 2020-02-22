@@ -1,0 +1,6 @@
+"0","# ltmパッケージをここだけで一時的に読んでいるためltm::としている"
+"0","ltm::biserial.cor(bfi_a$total_a, bfi_a$gender, use = ""complete.obs"")"
+"1","[1]"
+"1"," -0.2075376"
+"1","
+"

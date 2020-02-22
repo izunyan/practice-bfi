@@ -1,0 +1,3 @@
+"0","bfi_anm %>% "
+"0","  mutate(A1nmr = na_if(A1nm, ""不明"")) %>% "
+"0","  count(A1nmr)"

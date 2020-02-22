@@ -1,0 +1,6 @@
+"0",""
+"0","# カテゴリの各区間の長さを指定"
+"0","bfi_a %>% "
+"0","  mutate(agec2 = cut_width(age, width = 20, center = 10)) %>% "
+"0","                     # width = 区間の長さ, デフォルトだとcenter = 0になってしまうので10に"
+"0","  count(agec2)"

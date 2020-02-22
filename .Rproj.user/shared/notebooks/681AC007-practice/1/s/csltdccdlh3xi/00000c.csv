@@ -1,0 +1,11 @@
+"0","library(broom)"
+"0",""
+"0"," "
+"0","bfi_n <- "
+"0","bfi %>%"
+"0","  as_tibble %>% "
+"0","  nest(-gender)"
+"2","All elements of `...` must be named.
+Did you want `data = c(A1, A2, A3, A4, A5, C1, C2, C3, C4, C5, E1, E2, E3, E4, E5, 
+    N1, N2, N3, N4, N5, O1, O2, O3, O4, O5, education, age)`?"
+"0","bfi_n"

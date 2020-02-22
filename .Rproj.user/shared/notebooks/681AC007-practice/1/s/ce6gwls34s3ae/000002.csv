@@ -1,0 +1,1 @@
+"0","table1::table1(~ A1 + A2 + A3 + age + education | gender, data = bfi_a)"

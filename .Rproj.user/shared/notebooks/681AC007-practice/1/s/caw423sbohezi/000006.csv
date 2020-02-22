@@ -1,0 +1,19 @@
+"0","library(pals)"
+"2"," 要求されたパッケージ maps をロード中です 
+"
+"2","
+ 次のパッケージを付け加えます: ‘maps’ 
+
+"
+"2"," 以下のオブジェクトは ‘package:purrr’ からマスクされています: 
+
+     map 
+
+"
+"2","Registered S3 method overwritten by 'htmlwidgets':
+  method           from         
+  print.htmlwidget tools:rstudio
+"
+"0","many_col <- colorRampPalette(glasbey())(32)"
+"0","pie(rep(1, length(many_col)), col = many_col, main = """")"
+"0",""
