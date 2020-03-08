@@ -1,4 +1,0 @@
-"0",""
-"0",""
-"0","# 基本統計量をexcelファイルに出力"
-"0","writexl::write_xlsx(bfi_a_summary, ""result/bfi_a_summary.xlsx"")"

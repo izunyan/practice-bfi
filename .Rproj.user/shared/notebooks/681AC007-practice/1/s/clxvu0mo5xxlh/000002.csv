@@ -1,5 +1,0 @@
-"0","bfi_a %>% "
-"0","  summarise_at(vars(A1:A5),"
-"0","    list(~sum(is.na(.)))"
-"0","  ) %>% "
-"0","  gather()"

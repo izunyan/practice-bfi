@@ -1,4 +1,0 @@
-"0","bfi_s <- "
-"0"," bfi %>% "
-"0"," slice(1:15) %>% "
-"0"," select(A1:A5, gender, education, age)"

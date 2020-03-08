@@ -1,8 +1,0 @@
-"0","bfi_a <- "
-"0","bfi_a %>% "
-"0","  mutate(id = row_number())"
-"0",""
-"0","bfi_a <- "
-"0","bfi_a %>% select(id, everything()) "
-"0",""
-"0","bfi_a"

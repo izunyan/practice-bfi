@@ -1,1 +1,0 @@
-"0","bfi_a %>% select(-one_of(var_a)) # var_aのリスト以外を選ぶ"

@@ -1,4 +1,0 @@
-"0","bfi %>%"
-"0","  select(A1:A5, gender) %>% "
-"0","  group_by(gender) %>% "
-"0","  summarise_all(mean, na.rm = TRUE)"

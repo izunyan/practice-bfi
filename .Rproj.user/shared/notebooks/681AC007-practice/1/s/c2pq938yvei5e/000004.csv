@@ -1,8 +1,0 @@
-"0",""
-"0","# bfi %>%"
-"0","#   summarise_at(vars(A1, A2),"
-"0","#                funs(mean(., na.rm = TRUE),"
-"0","#                     sd(., na.rm = TRUE),"
-"0","#                     n = sum(!is.na(.))    # 欠損のない行の合計"
-"0","#                     )"
-"0","#                )"

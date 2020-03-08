@@ -1,7 +1,0 @@
-"0","library(ggforce)"
-"0","ggplot(bfi_long) +"
-"0","  geom_histogram(aes(answer), bins = 6) +"
-"0","  scale_x_continuous(breaks = seq(1,6, by = 1)) +"
-"0","  facet_wrap_paginate(~ items, nrow = 2, ncol = 3,  # ここに行と列の個数を指定"
-"0","                      scales = ""free"", page = 1)    # 何ページ目を表示するか指定 "
-"0",""

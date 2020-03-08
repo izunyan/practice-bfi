@@ -1,8 +1,0 @@
-"0","mean_total_b <- "
-"0","bfi_a %>% "
-"0","  group_by(gender,education) %>% "
-"0","  summarise(total_a = mean(total_a, na.rm = TRUE)) "
-"0","ggplot(mean_total_b, aes(x = education, y = total_a, fill = gender)) +"
-"0","  geom_col(position = ""dodge"") +"
-"0","  geom_text(aes(label = round(total_a, 1)), vjust = -1, position = position_dodge(width = 0.9)) +"
-"0","  scale_y_continuous(limits = c(0,25))"

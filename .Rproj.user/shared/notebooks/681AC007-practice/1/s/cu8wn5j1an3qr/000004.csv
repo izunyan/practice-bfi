@@ -1,6 +1,0 @@
-"0","bfi_n <-"
-"0","bfi_n %>% "
-"0","  mutate("
-"0","    fit = map(data, ~ lm(A5 ~ A1 + A4, data = .))"
-"0","              ) "
-"0","bfi_n"

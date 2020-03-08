@@ -1,4 +1,0 @@
-"0","# カテゴリの各区間の長さが等しくなるように"
-"0","bfi_a %>% "
-"0","  mutate(agec2 = cut_interval(age, 5)) %>% # 分割の数"
-"0","  count(agec2)"

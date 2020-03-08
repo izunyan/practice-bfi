@@ -1,3 +1,0 @@
-"0","# personographパッケージをここだけで一時的に読んでいるためpersonograph::としている"
-"0","parts <- list(男性 = 0.33, 女性 = 0.67)"
-"0","personograph::personograph(parts)"
