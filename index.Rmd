@@ -781,9 +781,19 @@ bfi_l <-
   as_tibble() %>%                    # tibble形式に変換
   select(gender,education,A1,A2) %>% # 変数を選択
   drop_na() %>%                      # 欠損は削除
-  gather(A1:A2,            # longにする変数A1:A2を指定
-         key = variables,
-         value = score)    # key = に変数名を識別する変数、value = に変数の中身を入れる
+  pivot_longer(A1:A2,            # longにする変数A1:A2を指定
+         names_to = "variables",
+         values_to = "score")    # key = に変数名を識別する変数、value = に変数の中身を入れる
+
+
+# bfi_l <-
+#   bfi %>%
+#   as_tibble() %>%                    # tibble形式に変換
+#   select(gender,education,A1,A2) %>% # 変数を選択
+#   drop_na() %>%                      # 欠損は削除
+#   gather(A1:A2,            # longにする変数A1:A2を指定
+#          key = variables,
+#          value = score)    # key = に変数名を識別する変数、value = に変数の中身を入れる
 
 bfi_l
 ```
@@ -801,7 +811,7 @@ bfi_l %>%
 ```{r}
 bfi_l_nest <-
   bfi_l %>%
-  nest(-c(gender,education,variables)) # 層別にする変数を指定
+  nest(data = score) # 層別にする変数を指定; -c(gender,education,variables)
 
 # データ確認
 bfi_l_nest %>%
@@ -816,18 +826,29 @@ bfi_l_nest %>%
 bfi_l_nest <-
 bfi_l_nest %>%
   mutate(freq =
-           map(data, ~ tabyl(.x, score))) # データフレームは`.x`で表す; ()内は.$scoreでも動く
+           map(data, ~ tabyl(.x, score)),  # データフレームは`.x`で表す; ()内は.$scoreでも動く
+         freq = map(freq, ~adorn_totals(.))) # 層別の合計人数も入れる
+
+
+
+# bfi_l_nest <-
+# bfi_l_nest %>%
+#   mutate(freq =
+#            map(data, ~ tabyl(.x, score))) # データフレームは`.x`で表す; ()内は.$scoreでも動く
 
 bfi_l_nest
 ```
 
 ### それぞれの結果を出力
+
+* freqの中身はscore, n, percent
+
 ```{r}
-bfi_l_unest <-
+bfi_l_unnest <-
 bfi_l_nest %>%
   unnest(freq)
 
-bfi_l_unest
+bfi_l_unnest
 ```
 
 #### 一致しているか確認
@@ -838,7 +859,7 @@ bfi %>%
   tabyl(A1)
 
 # ネストしたデータセットから
-bfi_l_unest %>%
+bfi_l_unnest %>%
   filter(gender == 1 & education == 1 & variables == "A1")
 
 
@@ -847,25 +868,38 @@ bfi %>%
   filter(gender == 2 & education == 3) %>%
   tabyl(A2)
 
-bfi_l_unest %>%
+bfi_l_unnest %>%
   filter(gender == 2 & education == 3 & variables == "A2")
 ```
 
 ## 項目の回答選択肢を列名にするように変換
 ```{r}
+
 bfi_l_nest <-
   bfi_l_nest %>%
-  mutate(freq =
-           map(freq, ~ select(.x, -n)),  # nの列を削除
-         freq =                          # wideに変換
-           map(freq, ~ spread(.x, key = score, value = percent))
+  mutate(
+         freq = map(freq, 
+                    ~ pivot_wider(.x, names_from = "score",
+                                  values_from = c("percent", "n"),
+                                  names_prefix = "score")
+                    ) # wideに変換
   )
 
-bfi_l_unestw <-
-bfi_l_nest %>%
-  unnest(freq)
+# bfi_l_nest <-
+#   bfi_l_nest %>%
+#   mutate(freq =
+#            map(freq, ~ select(.x, -n)),  # nの列を削除
+#          freq =                          # wideに変換
+#            map(freq, ~ spread(.x, key = score, value = percent))
+#   )
 
-bfi_l_unestw
+bfi_l_unnestw <-
+bfi_l_nest %>%
+  unnest(c(freq)) %>% 
+  select(-data)
+
+
+DT::datatable(bfi_l_unnestw)
 ```
 
 
