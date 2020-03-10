@@ -193,14 +193,15 @@ bfi_a %>%
   summarise_at(vars(A1:A5),
     list(~sum(is.na(.)))
   ) %>% 
-  gather()
+  pivot_longer(everything())
 
 bfi_a %>% 
   summarise_all(list(
                      ~sum(is.na(.))
                     )
                 ) %>% 
-  gather()
+  pivot_longer(everything())
+
 ```
 
 
@@ -728,11 +729,21 @@ bfi_a %>% # 性別の結果
 ```{r}
 bfi %>% 
 summarise_at(vars(A1, A2), 
-             list(mean, sd), 
-             na.rm = TRUE) %>% 
-  gather() %>% 
-  separate(key, into = c("var_name", "summarised"), sep = "_") %>% 
-  spread(summarised, value)
+             list(~mean(., na.rm = TRUE),
+                  ~sd(., na.rm = TRUE)), 
+             ) %>% 
+  pivot_longer(everything()) %>% 
+  separate(name, into = c("var_name", "summarised"), sep = "_") %>% 
+  pivot_wider(names_from = "summarised",
+              values_from = "value")
+
+# bfi %>% 
+# summarise_at(vars(A1, A2), 
+#              list(mean, sd), 
+#              na.rm = TRUE) %>% 
+#   gather() %>% 
+#   separate(key, into = c("var_name", "summarised"), sep = "_") %>% 
+#   spread(summarised, value)
 ```
 
 #### 平均値と標準偏差を行に
@@ -880,8 +891,7 @@ bfi_l_nest <-
   mutate(
          freq = map(freq, 
                     ~ pivot_wider(.x, names_from = "score",
-                                  values_from = c("percent", "n"),
-                                  names_prefix = "score")
+                                  values_from = c("percent", "n")) # ,names_prefix = "score"
                     ) # wideに変換
   )
 
@@ -897,6 +907,11 @@ bfi_l_unnestw <-
 bfi_l_nest %>%
   unnest(c(freq)) %>% 
   select(-data)
+
+bfi_l_unnestw <- 
+  bfi_l_unnestw %>% 
+  mutate_at(vars(percent_1:percent_6),
+            list(~round(.,digits = 2)))
 
 
 DT::datatable(bfi_l_unnestw)
@@ -1240,6 +1255,12 @@ cor(bfi$A2, bfi$A3, use = "complete.obs")
 bfi %>% 
 select(A1:A5) %>% 
 cor(use = "complete.obs")
+```
+
+
+## corrr packageで相関
+```{r eval=FALSE, include=FALSE}
+library(corrr)
 ```
 
 
