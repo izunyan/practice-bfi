@@ -64,7 +64,23 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 > eval - Run code in chunk (default = TRUE) チャンクを実行  
 > include - Include chunk in doc after running (default = TRUE)  
 
+## よく使うショートカット一覧
 
+* `alt + shift + k` ショートカット一覧
+* `ctrl + shift + r` セクション区切り
+* `ctrl + 1` エディタ(source)部分に移動
+* `ctrl + 2` コンソールへ移動
+* `Shift + Alt + G` 指定行へ移動
+
+* `shift + end` 行末まで選択
+* `ctr+ shift + →` 次の区切りまで選択
+
+# データの読み込み
+## windowsで日本語（shift-jis）のデータを読むとき
+```{r eval=FALSE}
+dat <- read_csv(".csv", locale = locale(encoding = "CP932"))
+
+```
 
 
 # データハンドリング
