@@ -21,6 +21,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 * ★のついたチャンクはそれ以降の実行に必要なので必ず実行
 
 ## YAMLヘッダ
+
 ```{r eval = FALSE}
 # 自動で更新時の日時に
 date: "`r format(Sys.time(), '%Y/%m/%d')`"
@@ -29,10 +30,12 @@ date: "`r format(Sys.time(), '%Y/%m/%d')`"
 html_document:
     toc: TRUE             # 目次
     toc_float: true       # 目次のフロート
+  # toc_depth             # 表示させる階層、デフォルトは3
     number_sections: true # 自動でセクションナンバー付与
     theme: readable       #
     highlight: pygments   #
     css: custom.css       # 見栄えの細かい設定
+
 ```
 
 * theme: の種類
@@ -162,7 +165,7 @@ bfi_a %>%
 ```{r}
 bfi_a <- 
   bfi_a %>% 
-  mutate_at(c("gender", "education"), factor) %>% 
+  mutate(across(c("gender", "education"), factor)) %>% 
   mutate(gender = fct_recode(gender, male   = "1", 
                                      female = "2"),
          education = fct_recode(education, "HS" = "1",
@@ -206,15 +209,14 @@ skim(bfi_a)
 ### 欠損値の数一覧
 ```{r}
 bfi_a %>% 
-  summarise_at(vars(A1:A5),
-    list(~sum(is.na(.)))
+  summarise(across(A1:A5,
+    list(~sum(is.na(.))))
   ) %>% 
   pivot_longer(everything())
 
 bfi_a %>% 
-  summarise_all(list(
-                     ~sum(is.na(.))
-                    )
+  summarise(across(everything(),
+    list(n = ~sum(is.na(.))))
                 ) %>% 
   pivot_longer(everything())
 
@@ -250,10 +252,19 @@ bfi_a %>%
 ```{r}
 bfi_added <- 
   bfi %>% 
-  mutate_at(vars(A1, C4, C5, E1, E2, O2, O5),
+  mutate(across(c(A1, C4, C5, E1, E2, O2, O5),
             list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
                           `4` = 3, `5` = 2, `6` = 1))
+            )
   )
+
+# dplyr 0.8.3以前
+# bfi_added <- 
+#   bfi %>% 
+#   mutate_at(vars(A1, C4, C5, E1, E2, O2, O5),
+#             list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
+#                           `4` = 3, `5` = 2, `6` = 1))
+#   )
 ```
 
 ##### 確認
@@ -330,11 +341,20 @@ bfi_anm %>%
   mutate(A1nmr = na_if(A1nm, "不明")) %>% 
   count(A1nmr)
 
-bfi_arm2 <- 
-bfi_anm %>% 
-  mutate_at(vars(A1nm, A2nm),
+bfi_arm2 <-
+bfi_anm %>%
+  mutate(across(c(A1nm, A2nm),
             list(~na_if(., "不明"))
-  )
+               )
+        )
+
+
+# dplyr 0.8.3以前
+# bfi_arm2 <- 
+# bfi_anm %>% 
+#   mutate_at(vars(A1nm, A2nm),
+#             list(~na_if(., "不明"))
+#   )
 
 bfi_arm2 %>% count(A1nm)
 bfi_arm2 %>% count(A2nm)
@@ -497,14 +517,26 @@ bfi_a_2019
 ```{r}
 bfi_a_2018w <- 
   bfi_a_2018 %>% 
-  rename_at(vars(-id, -gender, -year),
-            list(~str_c(., "_18"))) %>% 
+  rename_with(~str_c(., "_18"),
+              c(-id, -gender, -year)) %>% 
   select(-year)
 
 bfi_a_2019w <- 
   bfi_a_2019 %>% 
-  rename_at(vars(-id, -gender),
-            list(~str_c(., "_19")))
+  rename_with(~str_c(., "_19"),
+              c(-id, -gender))
+
+# dplyr 0.8.3以前
+# bfi_a_2018w <- 
+#   bfi_a_2018 %>% 
+#   rename_at(vars(-id, -gender, -year),
+#             list(~str_c(., "_18"))) %>% 
+#   select(-year)
+# 
+# bfi_a_2019w <- 
+#   bfi_a_2019 %>% 
+#   rename_at(vars(-id, -gender),
+#             list(~str_c(., "_19")))
 
 bfi_a_all <- 
   full_join(bfi_a_2018w, bfi_a_2019w) %>% 
@@ -544,10 +576,17 @@ bfi_a_all_wide <-
 bfi_a_all_wide <- 
   bfi_a_all_wide %>% 
   select(-starts_with("year")) %>% 
-  rename_at(vars(matches("bfi_a")),
-            list(~str_replace(., "bfi_a_", "")))
+  rename_with(~str_replace(., "bfi_a_", ""),
+              matches("bfi_a"))
 
 bfi_a_all_wide
+
+# dplyr 0.8.3以前
+# bfi_a_all_wide <- 
+#   bfi_a_all_wide %>% 
+#   select(-starts_with("year")) %>% 
+#   rename_at(vars(matches("bfi_a")),
+#             list(~str_replace(., "bfi_a_", "")))
 ```
 
 
@@ -625,25 +664,34 @@ bfi %>%
             A2 = mean(A2, na.rm = TRUE))
 ```
 
-### summarise_at
+### 複数変数を対象
 ```{r}
+
 bfi %>%
-  summarise_at(vars(A1, A2), 
+  summarise(across(c(A1, A2), 
                mean, na.rm = TRUE)
+  )
+
+# dplyr 0.8.3以前
+# bfi %>%
+#   summarise_at(vars(A1, A2), 
+#                mean, na.rm = TRUE)
 ```
 
-### summarise_at，関数も個別に(1)
+### 関数も個別に(1)
 ```{r}
 bfi %>% 
-  summarise_at(vars(A1, A2), 
+  summarise(across(c(A1, A2), 
                list(mean, sd), 
                na.rm = TRUE)
+  )
 
+# dplyr 0.8.3以前
+# bfi %>% 
+#   summarise_at(vars(A1, A2), 
+#                list(mean, sd), 
+#                na.rm = TRUE)
 
-# bfi %>%
-# summarise_at(vars(A1, A2),
-#              funs(mean,sd),
-#              na.rm = TRUE)
 
 # こちらでもOK
 # bfi %>%
@@ -653,7 +701,7 @@ bfi %>%
 #   ) 
 ```
 
-### summarise_at，関数も個別に(2)
+### 関数も個別に(2)
 
 * ※現在は動かないので要修正
 * nはリストワイズ
@@ -661,12 +709,25 @@ bfi %>%
 ```{r eval=FALSE, include=FALSE}
 bfi %>%
   drop_na(A1,A2) %>% 
-  summarise_at(vars(A1, A2),
+  summarise(across(c(A1, A2),
                list(mean,
                     sd,
                     n()
                     )
                )
+  )
+
+
+
+# dplyr 0.8.3以前
+# bfi %>%
+#   drop_na(A1,A2) %>% 
+#   summarise_at(vars(A1, A2),
+#                list(mean,
+#                     sd,
+#                     n()
+#                     )
+#                )
 
 # bfi %>%
 #   drop_na(A1,A2) %>% 
@@ -678,18 +739,29 @@ bfi %>%
 #                )
 ```
 
-### summarise_at，関数も個別に(3)
+### 関数も個別に(3)
 
 * nはペアワイズ
 
 ```{r}
 bfi %>%
-  summarise_at(vars(A1, A2),
-               list(~mean(., na.rm = TRUE),
-                    ~sd(., na.rm = TRUE),
-                n = ~sum(!is.na(.))    # 欠損のない行の合計
-                    )
+  summarise(across(c(A1, A2),
+               list(mean = ~mean(., na.rm = TRUE),
+                      sd = ~sd(., na.rm = TRUE),
+                       n = ~sum(!is.na(.)))    # 欠損のない行の合計
+                  )
                )
+
+
+
+# dplyr 0.8.3以前
+# bfi %>%
+#   summarise_at(vars(A1, A2),
+#                list(~mean(., na.rm = TRUE),
+#                     ~sd(., na.rm = TRUE),
+#                 n = ~sum(!is.na(.))    # 欠損のない行の合計
+#                     )
+#                )
 
 # bfi %>%
 #   summarise_at(vars(A1, A2),
@@ -700,11 +772,19 @@ bfi %>%
 #                )
 ```
 
-### summarise_all, 選択した変数すべて
+### 選択した変数すべて
 ```{r}
 bfi %>%
-  select(A1:A5) %>% 
-  summarise_all(mean, na.rm = TRUE)
+  select(A1:A5) %>%
+  summarise(across(everything(), 
+            mean, na.rm = TRUE) # , .names = "{col}_mean"
+  )
+            
+
+# dplyr 0.8.3以前
+# bfi %>%
+#   select(A1:A5) %>% 
+#   summarise_all(mean, na.rm = TRUE)
 ```
 
 ## 層別
@@ -712,29 +792,58 @@ bfi %>%
 bfi %>%
   select(A1:A5, gender) %>% 
   group_by(gender) %>% 
-  summarise_all(mean, na.rm = TRUE)
+  summarise(across(everything(),
+    mean, na.rm = TRUE)
+  )
+
+# dplyr 0.8.3以前
+# bfi %>%
+#   select(A1:A5, gender) %>% 
+#   group_by(gender) %>% 
+#   summarise_all(mean, na.rm = TRUE)
 ```
 
 ### 層別および全体の値を一度に算出
 ```{r}
 bfi_a %>% # 性別の結果
   group_by(gender) %>% 
-  summarise_at(vars(A1, A2),
+  summarise(across(c(A1, A2),
                list(~mean(., na.rm = TRUE),
                       ~sd(., na.rm = TRUE),
-                 n = ~sum(!is.na(.))
+                 n = ~sum(!is.na(.)))
                     )
                ) %>% 
   bind_rows(.,         # 上で作ったデータフレームがここに
             bfi_a %>%  # 全体の結果
-                summarise_at(vars(A1, A2),
+                summarise(across(c(A1, A2),
                              list(~mean(., na.rm = TRUE),
                                     ~sd(., na.rm = TRUE),
-                               n = ~sum(!is.na(.))
+                               n = ~sum(!is.na(.)))
                                  )
                              ) %>% 
               mutate(gender = "all") # 最初に作ったデータフレームにgenderの列があるため
             )
+
+
+# dplyr 0.8.3以前
+# bfi_a %>% # 性別の結果
+#   group_by(gender) %>% 
+#   summarise_at(vars(A1, A2),
+#                list(~mean(., na.rm = TRUE),
+#                       ~sd(., na.rm = TRUE),
+#                  n = ~sum(!is.na(.))
+#                     )
+#                ) %>% 
+#   bind_rows(.,         # 上で作ったデータフレームがここに
+#             bfi_a %>%  # 全体の結果
+#                 summarise_at(vars(A1, A2),
+#                              list(~mean(., na.rm = TRUE),
+#                                     ~sd(., na.rm = TRUE),
+#                                n = ~sum(!is.na(.))
+#                                  )
+#                              ) %>% 
+#               mutate(gender = "all") # 最初に作ったデータフレームにgenderの列があるため
+#             )
 
 
 ```
@@ -744,14 +853,16 @@ bfi_a %>% # 性別の結果
 #### 平均値と標準偏差を列に
 ```{r}
 bfi %>% 
-summarise_at(vars(A1, A2), 
-             list(~mean(., na.rm = TRUE),
-                  ~sd(., na.rm = TRUE)), 
+summarise(across(c(A1, A2), 
+             list(mean = ~mean(., na.rm = TRUE),
+                  sd   = ~sd(., na.rm = TRUE))
+                )
              ) %>% 
   pivot_longer(everything()) %>% 
   separate(name, into = c("var_name", "summarised"), sep = "_") %>% 
   pivot_wider(names_from = "summarised",
               values_from = "value")
+
 
 # bfi %>% 
 # summarise_at(vars(A1, A2), 
@@ -766,12 +877,14 @@ summarise_at(vars(A1, A2),
 ```{r}
 bfi_m <- 
 bfi %>% 
-summarise_at(vars(A1, A2), 
-             mean, na.rm = TRUE) 
+summarise(across(c(A1, A2), 
+             mean, na.rm = TRUE)
+)
 
 bfi_sd <- 
-bfi %>% summarise_at(vars(A1, A2), 
-                     sd, na.rm = TRUE) 
+bfi %>% summarise(across(c(A1, A2), 
+                     sd, na.rm = TRUE)
+)
 
 bind_rows(bfi_m, bfi_sd) %>%
   mutate(name = c("mean", "sd")) %>% 
@@ -926,8 +1039,9 @@ bfi_l_nest %>%
 
 bfi_l_unnestw <- 
   bfi_l_unnestw %>% 
-  mutate_at(vars(percent_1:percent_6),
+  mutate(across(percent_1:percent_6,
             list(~round(.,digits = 2)))
+  )
 
 
 DT::datatable(bfi_l_unnestw)
