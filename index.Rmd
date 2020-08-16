@@ -66,6 +66,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 > echo - Display code in output document (default = TRUE)   コードをアウトプットに表示  
 > eval - Run code in chunk (default = TRUE) チャンクを実行  
 > include - Include chunk in doc after running (default = TRUE)  
+> results = 'hide'とすると、コードは実行も表示もされるが結果は表示されない
 
 ## よく使うショートカット一覧
 
@@ -210,7 +211,7 @@ skim(bfi_a)
 ```{r}
 bfi_a %>% 
   summarise(across(A1:A5,
-    list(~sum(is.na(.))))
+    list(n = ~sum(is.na(.))))
   ) %>% 
   pivot_longer(everything())
 

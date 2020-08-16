@@ -1,9 +1,9 @@
 {
-    "path" : "E:/R/r_project/practice_bfi",
-    "sortOrder" : [
+    "path": "E:/R/r_project/practice_bfi",
+    "sortOrder": [
         {
-            "ascending" : true,
-            "columnIndex" : 2
+            "columnIndex": 2,
+            "ascending": true
         }
     ]
 }
