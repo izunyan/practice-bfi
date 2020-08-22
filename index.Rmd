@@ -591,14 +591,37 @@ bfi_a_all_wide
 ```
 
 
-## リストの扱い
+## リストの深い階層から値を取り出す（α係数を例に）
+### データフレームのリスト作成
 ```{r}
-
+bfi_la <- bfi %>% select(A2:A4)
+bfi_lc <- bfi %>% select(C1:C3)
+  
+bfi_list <- list(bfi_la, bfi_lc)
 ```
 
+### 各データフレームの信頼性算出
 ```{r}
+bfi_alpha <- 
+  map(bfi_list, alpha)
 
+bfi_alpha %>% 
+  str(list.len = 3) # 各要素の最初の3つのみ表示
 ```
+
+### 各データフレーム要素から"total"要素を取り出す
+```{r}
+alpha_total <- 
+  map(bfi_alpha, "total")
+
+alpha_total
+```
+
+### α係数のみに
+```{r}
+map_dbl(alpha_total, "raw_alpha")
+```
+
 
 
 # データフレームの表示
