@@ -6,6 +6,7 @@ output:
   html_document: 
     toc: TRUE
     toc_float: true
+    toc_depth: 4
     number_sections: true
     theme: readable
     highlight: pygments
@@ -30,7 +31,7 @@ date: "`r format(Sys.time(), '%Y/%m/%d')`"
 html_document:
     toc: TRUE             # 目次
     toc_float: true       # 目次のフロート
-  # toc_depth             # 表示させる階層、デフォルトは3
+    toc_depth: 4          # 表示させる階層、デフォルトは3
     number_sections: true # 自動でセクションナンバー付与
     theme: readable       #
     highlight: pygments   #
@@ -554,7 +555,13 @@ bfi_a_list <- list(bfi_a_2018, bfi_a_2019)
 names(bfi_a_list)
 
 # リストの各要素に名前
-names(bfi_a_list) <- c("bfi_a_2018", "bfi_a_2019")
+
+bfi_a_list <- 
+set_names(bfi_a_list, c("bfi_a_2018", "bfi_a_2019"))
+
+# もう1つの方法
+# names(bfi_a_list) <- c("bfi_a_2018", "bfi_a_2019")
+
 names(bfi_a_list)
 
 
@@ -882,12 +889,23 @@ summarise(across(c(A1, A2),
                   sd   = ~sd(., na.rm = TRUE))
                 )
              ) %>% 
-  pivot_longer(everything()) %>% 
-  separate(name, into = c("var_name", "summarised"), sep = "_") %>% 
-  pivot_wider(names_from = "summarised",
-              values_from = "value")
+  pivot_longer(everything(),
+               names_to = c("items", ".value"), # ".value"の部分を列名に
+               names_pattern = "(.*)_(.*)") 　  # 正規表現
 
+## 強引に縦にしてから横に
+# bfi %>% 
+# summarise(across(c(A1, A2), 
+#              list(mean = ~mean(., na.rm = TRUE),
+#                   sd   = ~sd(., na.rm = TRUE))
+#                 )
+#              ) %>% 
+#   pivot_longer(everything()) %>% 
+#   separate(name, into = c("var_name", "summarised"), sep = "_") %>% 
+#   pivot_wider(names_from = "summarised",
+#               values_from = "value")
 
+## gather()の場合
 # bfi %>% 
 # summarise_at(vars(A1, A2), 
 #              list(mean, sd), 
@@ -899,20 +917,31 @@ summarise(across(c(A1, A2),
 
 #### 平均値と標準偏差を行に
 ```{r}
-bfi_m <- 
 bfi %>% 
 summarise(across(c(A1, A2), 
-             mean, na.rm = TRUE)
-)
+             list(mean = ~mean(., na.rm = TRUE),
+                  sd   = ~sd(., na.rm = TRUE))
+                )
+             ) %>% 
+  pivot_longer(everything(),
+               names_to = c(".value", "stats"),
+               names_pattern = "(.*)_(.*)") 
 
-bfi_sd <- 
-bfi %>% summarise(across(c(A1, A2), 
-                     sd, na.rm = TRUE)
-)
-
-bind_rows(bfi_m, bfi_sd) %>%
-  mutate(name = c("mean", "sd")) %>% 
-  select(name, everything())
+## 別々にデータフレームを作って統合
+# bfi_m <- 
+# bfi %>% 
+# summarise(across(c(A1, A2), 
+#              mean, na.rm = TRUE)
+# )
+# 
+# bfi_sd <- 
+# bfi %>% summarise(across(c(A1, A2), 
+#                      sd, na.rm = TRUE)
+# )
+# 
+# bind_rows(bfi_m, bfi_sd) %>%
+#   mutate(name = c("mean", "sd")) %>% 
+#   select(name, everything())
 
 # 次の方法でもnameを作れる
 # add_column(name = c("mean", "sd"), .before = "A2")
