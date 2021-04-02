@@ -1626,6 +1626,32 @@ res_fit %>%
   facet_wrap(~ gender, ncol = 1) 
 ```
 
+# 回帰：アウトカムが複数の場合
+## それぞれの回帰を実行し結果をリストに格納
+```{r}
+# 対象となるアウトカムをオブジェクトに
+outcomes <- 
+  bfi %>% 
+  select(A3:A5) %>% 
+  names()
+
+# それぞれの回帰を実行しリストに格納
+res_l <- 
+outcomes %>% 
+  str_c(., "~ A1 + A2") %>%
+  map(~lm(as.formula(.x), data= bfi)) %>% 
+  set_names(outcomes)
+```
+
+## 結果を1つのデータフレームにまとめる
+```{r}
+res_l %>% 
+  map(~tidy(., conf.int = TRUE)) %>% 
+  bind_rows(.id = "outcome")
+```
+
+
+
 # パッケージ管理
 ## 古いバージョンのパッケージをインストール
 
