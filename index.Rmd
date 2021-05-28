@@ -227,18 +227,15 @@ bfi_a %>%
 
 ### ★逆転項目の反転と合計得点の作成
 ```{r}
-bfi_a <- bfi_a %>% 
-  mutate(A1r = recode(A1, `1` = 6, `2` = 5, `3` = 4, 
-                          `4` = 3, `5` = 2, `6` = 1),
+bfi_a <- 
+  bfi_a %>% 
+  mutate(A1r = recode(A1, `1` = 6L, `2` = 5L, `3` = 4L, 
+                          `4` = 3L, `5` = 2L, `6` = 1L),
          total_a = A1r + A2 + A3 + A4 + A5)
 
 # 確認
 bfi_a %>%
   select(A1, A1r, A2:A5, total_a) 
-
-
-
-
 ```
 
 
@@ -666,11 +663,11 @@ DT::datatable(bfi_s)
 * うまく表示されないので出力なし
 
 ```{r ecoh = TRUE, eval=FALSE, include=FALSE, results='asis'}
-library(summarytools)
-# dfSummary(bfi_a)
 
-# もっときれいに
-dfSummary(bfi_a, style = "grid", plain.ascii = FALSE,
+summarytools::dfSummary(bfi_a)
+
+# もっときれいに →　imgフォルダが作られてしまうので注意
+summarytools::dfSummary(bfi_a, style = "grid", plain.ascii = FALSE,
           varnumbers = FALSE, valid.col = FALSE, 
           graph.magnif = 0.75, tmp.img.dir = "./img")
 
@@ -1100,6 +1097,22 @@ bfi_l_unnestw <-
 DT::datatable(bfi_l_unnestw)
 ```
 
+## tabylじゃなくてpercent = n / sum(n)の場合
+```{r}
+bfi %>% 
+select(gender,education,A1,A2) %>% 
+  pivot_longer(
+    !c(gender, education),
+    names_to = "variables") %>% 
+  count(gender, education, variables, value) %>%
+  drop_na(value) %>% # これで欠損を含めないpercentに
+  group_by(gender, education, variables) %>% 
+  mutate(percent = n / sum(n)) %>% 
+  ungroup()
+
+
+```
+
 
 # 可視化
 ## 層別平均値の棒グラフ
@@ -1423,6 +1436,59 @@ personograph::personograph(parts)
 personograph::personograph(parts,
                            colors = list(男性   = "darkorange",
                                          女性 = "deepskyblue3"))
+```
+
+## 設問ごとの可視化
+
+* `likert()`はdata.frame形式
+  + https://stackoverflow.com/questions/46646308/problems-with-r-likert-package
+
+* 解説
+　+ http://rstudio-pubs-static.s3.amazonaws.com/167534_c1fd7466282942599764b5ab1329d7e9.html
+
+```{r}
+library(likert)
+
+bfi_lik <- 
+bfi_a %>% 
+  select(A1r, A2:A5) %>% 
+  mutate(across(everything(), factor)) %>% 
+  as.data.frame() %>% # data.frame形式
+  likert()
+
+plot(bfi_lik)
+```
+
+### 中心位置を変更
+```{r}
+plot(bfi_lik, center = 4.5)
+```
+
+### ヒートマップ
+```{r}
+plot(bfi_lik, type = "heat")
+
+```
+
+
+### 層別
+```{r}
+bfi_a <- 
+  bfi_a %>% 
+ mutate(gender = factor(gender),
+   gender = fct_recode(gender,
+                            males = "1", females = "2"))  #Males = 1, Females =2
+
+bfi_lik_gen <- 
+bfi_a %>% 
+  select(A1r, A2:A5) %>% 
+  mutate(across(everything(), factor)) %>% 
+  as.data.frame() %>% # data.frame形式
+  likert(grouping = bfi_a$gender)
+
+
+plot(bfi_lik_gen)
+
 ```
 
 
