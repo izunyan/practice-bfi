@@ -224,6 +224,44 @@ bfi_a %>%
 
 ```
 
+#### パッケージで
+##### mice::md.pattern
+
+* 1=observed, 0=missing
+* 最初の列は各パターンの人数
+* 最後の列は欠損のある列の数
+* 最後の列最終行は各列の欠損数の合計
+* 最初の列の最初の行はリストワイズした時の人数(各列NA = 0の数）
+
+```{r}
+bfi_a %>% 
+  select(A1:A5) %>% 
+mice::md.pattern()
+```
+
+##### mice::md.pairs
+
+* rr: 2つの変数が観測される
+* rm: 行があり，列がmissing
+* mr: 行がmissing，列があり
+* mm: 2つの変数がmissing
+
+```{r}
+bfi_a %>% 
+  select(A1:A5) %>% 
+mice::md.pairs()
+```
+
+
+##### naniar
+```{r eval=FALSE, include=FALSE}
+library(naniar)
+bfi_a %>% 
+    select(A1:A5) %>% 
+    vis_miss()
+
+```
+
 
 ### ★逆転項目の反転と合計得点の作成
 ```{r}
@@ -243,7 +281,7 @@ bfi_a %>%
 
 > keys.list <- list(agree=c("-A1","A2","A3","A4","A5"),
 >                  conscientious=c("C1","C2","C3","-C4","-C5"),
->                  extraversion=c("-EE11","-E2","E3","E4","E5"),
+>                  extraversion=c("-E1","-E2","E3","E4","E5"),
 >                  neuroticism=c("N1","N2","N3","N4","N5"), 
 >                  openness = c("O1","-O2","O3","O4","-O5")) 
 
@@ -273,13 +311,14 @@ bfi_added %>% count(O2, O2_r)
 ```
 
 #### 合計得点の作成
+
 ```{r}
 bfi_added <- 
   bfi_added %>% 
   mutate(agree = A1_r + A2 + A3 + A4 + A5,
-         conscientious= C1 + C2 + C3 + C4_r + C5_r,
-         extraversion= -E1 + E2_r + E3 + E4 + E5,
-         neuroticism= N1 + N2 + N3 + N4 + N5, 
+         conscientious = C1 + C2 + C3 + C4_r + C5_r,
+         extraversion = E1_r + E2_r + E3 + E4 + E5,
+         neuroticism = N1 + N2 + N3 + N4 + N5, 
          openness =  O1 + O2_r + O3 + O4 + O5_r
   )
 
@@ -294,18 +333,36 @@ rm(bfi_added_cor)
 
 
 
-### 合計得点の作成(関数)
+
+#### 合計得点の作成(関数)
+```{r}
+bfi %>%
+  select(starts_with("n")) %>%
+  names()
+
+bfi_added %>% 
+  mutate(neuroticism2 = rowSums(across(c(N1:N5)))) %>% 
+  select(N1:N5,neuroticism, neuroticism2) %>% 
+  head()
+
+
+
+```
+
+##### 合計得点の作成(関数: base)
 ```{r}
 names(bfi_a)
 
-bfi_a <- 
-bfi_a %>% 
+bfi_a <-
+bfi_a %>%
   mutate(total_a2 = rowSums(.[c(2:5, 9)])) # na.rm = TRUEにするとNAは0扱いになる
 
 # 確認
 bfi_a %>%
-  select(A1r, A2:A5, total_a, total_a2) 
+  select(A1r, A2:A5, total_a, total_a2) %>% 
+  head()
 ```
+
 
 ### 文字の指定によるデータの表示
 ```{r}
