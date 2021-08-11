@@ -148,8 +148,10 @@ bfi_a
 ```{r}
 var_a <- c("A1","A5")
 
-bfi_a %>% select(var_a)
-bfi_a %>% select(-one_of(var_a)) # var_aのリスト以外を選ぶ
+bfi_a %>% select(all_of(var_a))
+bfi_a %>% select(!any_of(var_a)) # var_aのリスト以外を選ぶ
+
+# bfi_a %>% select(!one_of(var_a)) # var_aのリスト以外を選ぶ
 ```
 
 ### ケースの選択
@@ -344,9 +346,6 @@ bfi_added %>%
   mutate(neuroticism2 = rowSums(across(c(N1:N5)))) %>% 
   select(N1:N5,neuroticism, neuroticism2) %>% 
   head()
-
-
-
 ```
 
 ##### 合計得点の作成(関数: base)
@@ -603,45 +602,71 @@ bfi_a_all
 
 
 ### 個々のデータフレームをlistにまとめて自動で変数名変換
+
+* https://stackoverflow.com/questions/61914847/replacing-dplyrfuns-within-imap-that-refers-to-the-y-value
+
 ```{r}
 # リスト作成
 bfi_a_list <- list(bfi_a_2018, bfi_a_2019)
 names(bfi_a_list)
 
 # リストの各要素に名前
-
-bfi_a_list <- 
-set_names(bfi_a_list, c("bfi_a_2018", "bfi_a_2019"))
-
-# もう1つの方法
-# names(bfi_a_list) <- c("bfi_a_2018", "bfi_a_2019")
-
+bfi_a_list <-
+set_names(bfi_a_list, c("2018", "2019"))
 names(bfi_a_list)
+
+# リストの要素名をそれぞれのdfの変数の接尾辞に
+bfi_a_list <- 
+ imap(bfi_a_list,
+       function(a,b){
+         rename_with(a,
+         ~{str_c(., b, sep = "_")}, !id)}
+      )
+
+bfi_a_list %>% head()
+
+# リスト内のデータフレームを横に連結
+bfi_a_all_wide <-
+  bfi_a_list %>%
+  reduce(full_join, by = "id")
+
+ 
+
+bfi_a_all_wide
+
+# old
+# bfi_a_list <- 
+# set_names(bfi_a_list, c("bfi_a_2018", "bfi_a_2019"))
+# 
+# # もう1つの方法
+# # names(bfi_a_list) <- c("bfi_a_2018", "bfi_a_2019")
+# 
+# names(bfi_a_list)
+
 
 
 # リストの各要素を変数名の接尾辞に
-for (i in names(bfi_a_list)){
-  colnames(bfi_a_list[[i]]) <- c("id", 
-                               str_c("A1", "_", i),
-                               str_c("A2", "_", i),
-                               str_c("A3", "_", i),
-                               "gender", "year"
-                                )
-}
+# for (i in names(bfi_a_list)){
+#   colnames(bfi_a_list[[i]]) <- c("id", 
+#                                str_c("A1", "_", i),
+#                                str_c("A2", "_", i),
+#                                str_c("A3", "_", i),
+#                                "gender", "year"
+#                                 )
+# }
+# 
+# # リスト内のデータフレームを横に連結
+# bfi_a_all_wide <- 
+#   bfi_a_list %>% 
+#   reduce(full_join, by = c("id", "gender"))
+# 
+# # 変数名からbfi_aを取る
+# bfi_a_all_wide <- 
+#   bfi_a_all_wide %>% 
+#   select(-starts_with("year")) %>% 
+#   rename_with(~str_replace(., "bfi_a_", ""),
+#               matches("bfi_a"))
 
-# リスト内のデータフレームを横に連結
-bfi_a_all_wide <- 
-  bfi_a_list %>% 
-  reduce(full_join, by = c("id", "gender"))
-
-# 変数名からbfi_aを取る
-bfi_a_all_wide <- 
-  bfi_a_all_wide %>% 
-  select(-starts_with("year")) %>% 
-  rename_with(~str_replace(., "bfi_a_", ""),
-              matches("bfi_a"))
-
-bfi_a_all_wide
 
 # dplyr 0.8.3以前
 # bfi_a_all_wide <- 
