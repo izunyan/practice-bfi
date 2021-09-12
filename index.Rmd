@@ -1175,24 +1175,39 @@ bfi_l_unnestw <-
             list(~round(.,digits = 2)))
   )
 
+# 確認用
+check_res1 <- 
+  bfi_l_unnestw %>% 
+  filter(gender == 1 & education == 1 & variables == "A1")
+
 
 DT::datatable(bfi_l_unnestw)
 ```
 
 ## tabylじゃなくてpercent = n / sum(n)の場合
+
+* drop_naの位置の違いで上の数値と一致していなかった部分を修正（2021/09/12）
+
 ```{r}
-bfi %>% 
-select(gender,education,A1,A2) %>% 
+bfi_nsum <-
+bfi %>%
+select(gender,education,A1,A2) %>%
+  drop_na() %>% 
   pivot_longer(
     !c(gender, education),
-    names_to = "variables") %>% 
+    names_to = "variables") %>%
   count(gender, education, variables, value) %>%
-  drop_na(value) %>% # これで欠損を含めないpercentに
-  group_by(gender, education, variables) %>% 
-  mutate(percent = n / sum(n)) %>% 
+  group_by(gender, education, variables) %>%
+  mutate(percent = n / sum(n)) %>%
   ungroup()
 
 
+# 確認用
+check_res2 <-
+  bfi_nsum %>%
+   filter(gender == 1 & education == 1 & variables == "A1")
+
+check_res2
 ```
 
 
