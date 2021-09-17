@@ -1210,6 +1210,53 @@ check_res2 <-
 check_res2
 ```
 
+## pivot_longerを使わずに関数で
+### 層別変数を関数内に組み込みver
+```{r}
+strat_freq <- function(df, outcome_var){
+df %>%
+  nest(data = -c(gender, education)) %>% # あらかじめ層別変数を指定しておく
+  mutate(freq =
+           map(data, ~ tabyl(.x, {{outcome_var}}, show_na = FALSE))) %>% # 欠損は除外して算出
+  select(-data) %>% 
+  unnest(cols = c(freq)) %>% 
+  # drop_na(education) %>% 
+  as_tibble()
+}  
+
+# 変数1つだけ
+strat_freq(bfi, A1)
+
+# 複数変数
+map(c("A1", "A2"), ~strat_freq(bfi, .))
+```
+
+### 層別変数も引数で指定ver
+```{r}
+strat_freq <- function(df, outcome_var, group_var){
+df %>%
+  nest(data = -{{group_var}}) %>% 
+  mutate(freq =
+           map(data, ~ tabyl(.x, {{outcome_var}}, show_na = FALSE))) %>% 
+  select(-data) %>% 
+  unnest(cols = c(freq)) %>% 
+  # drop_na(education) %>% 
+  as_tibble()
+}  
+
+# 関数の動作確認
+strat_freq(bfi, A1, c("gender"))
+
+
+
+# 複数層別，複数変数
+quos(c(gender,education)) %>% 
+  map2(c("A1", "A2"), ~strat_freq(bfi, .y,  !!.x))
+
+
+
+
+```
 
 # 可視化
 ## 層別平均値の棒グラフ
