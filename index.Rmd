@@ -11,6 +11,8 @@ output:
     theme: readable
     highlight: pygments
     css: custom.css
+editor_options: 
+  chunk_output_type: console
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
@@ -1034,6 +1036,7 @@ summarise(across(c(A1, A2),
 * unnestでcols = をつける
 
 ```{r}
+res_one_var_multi_strat <- 
   bfi %>%
   nest(data = -c(gender, education)) %>% 
   mutate(freq =
@@ -1041,12 +1044,20 @@ summarise(across(c(A1, A2),
   select(-data) %>% 
   unnest(cols = c(freq)) %>% 
   drop_na(education) %>% 
-  as_tibble()
+  as_tibble() %>% 
+  arrange(gender, education)
+
+
+res_one_var_multi_strat %>% 
+  head(12)
 ```
 
 
 
 ## 複数の項目の頻度を複数層別で確認するためにデータ構造変換
+
+* ただし行数が非常に多くなるので大量データには不向き
+
 ```{r}
 bfi_l <-
   bfi %>%
@@ -1067,7 +1078,7 @@ bfi_l <-
 #          key = variables,
 #          value = score)    # key = に変数名を識別する変数、value = に変数の中身を入れる
 
-bfi_l
+bfi_l %>% head()
 ```
 
 ### 確認
@@ -1118,7 +1129,8 @@ bfi_l_nest
 ```{r}
 bfi_l_unnest <-
 bfi_l_nest %>%
-  unnest(freq)
+  unnest(freq) %>% 
+  arrange(gender, education)
 
 bfi_l_unnest
 ```
@@ -1128,7 +1140,7 @@ bfi_l_unnest
 bfi %>%
   drop_na(gender,education,A1,A2) %>%  # nestデータと同様の条件にするため
   filter(gender == 1 & education == 1) %>%
-  tabyl(A1)
+  tabyl(A1) 
 
 # ネストしたデータセットから
 bfi_l_unnest %>%
@@ -1173,7 +1185,8 @@ bfi_l_unnestw <-
   bfi_l_unnestw %>% 
   mutate(across(percent_1:percent_6,
             list(~round(.,digits = 2)))
-  )
+  ) %>% 
+  arrange(gender, education)
 
 # 確認用
 check_res1 <- 
@@ -1232,6 +1245,9 @@ map(c("A1", "A2"), ~strat_freq(bfi, .))
 ```
 
 ### 層別変数も引数で指定ver
+
+* A1, A2をdropしているnest, pivot_longerのやり方とはnが異なる
+
 ```{r}
 strat_freq <- function(df, outcome_var, group_var){
 df %>%
@@ -1250,13 +1266,33 @@ strat_freq(bfi, A1, c("gender"))
 
 
 # 複数層別，複数変数
+res_sf <- 
 quos(c(gender,education)) %>% 
   map2(c("A1", "A2"), ~strat_freq(bfi, .y,  !!.x))
 
-
+res_sf <- 
+res_sf %>% 
+  map(~drop_na(., education)) %>% 
+  map(~arrange(., gender, education))
 
 
 ```
+
+## 結果確認
+```{r}
+
+# 1つの項目の頻度を複数層別で確認するためにデータ構造変換
+res_one_var_multi_strat %>% head(12)
+
+
+# tabylじゃなくてpercent = n / sum(n)の場合
+check_res2
+
+# 層別変数も引数で指定ver
+res_sf[[1]] %>% head()
+
+```
+
 
 # 可視化
 ## 層別平均値の棒グラフ
