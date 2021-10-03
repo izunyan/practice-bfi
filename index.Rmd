@@ -184,6 +184,8 @@ bfi_a <-
 ```
 
 
+
+
 #### 要約統計量算出
 
 * ~~要約に便利な`skim()`を使っているが，htmlにはヒストグラムがうまく表示されないので省略~~
@@ -209,6 +211,53 @@ skim(bfi_a)
 
 # 基本統計量をexcelファイルに出力
 # writexl::write_xlsx(bfi_a_summary, "result/bfi_a_summary.xlsx")
+```
+
+### 逆転項目の反転と合計得点の作成
+```{r}
+bfi_a <- 
+  bfi_a %>% 
+  mutate(A1r = recode(A1, `1` = 6L, `2` = 5L, `3` = 4L, 
+                          `4` = 3L, `5` = 2L, `6` = 1L),
+         total_a = A1r + A2 + A3 + A4 + A5)
+
+# 確認
+bfi_a %>%
+  select(A1, A1r, A2:A5, total_a) 
+```
+
+
+#### ★逆転項目の反転と合計得点の作成(すべて)
+
+> keys.list <- list(agree=c("-A1","A2","A3","A4","A5"),
+>                  conscientious=c("C1","C2","C3","-C4","-C5"),
+>                  extraversion=c("-E1","-E2","E3","E4","E5"),
+>                  neuroticism=c("N1","N2","N3","N4","N5"), 
+>                  openness = c("O1","-O2","O3","O4","-O5")) 
+
+
+```{r}
+bfi_added <- 
+  bfi %>% 
+  mutate(across(c(A1, C4, C5, E1, E2, O2, O5),
+            list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
+                          `4` = 3, `5` = 2, `6` = 1))
+            )
+  )
+
+# dplyr 0.8.3以前
+# bfi_added <- 
+#   bfi %>% 
+#   mutate_at(vars(A1, C4, C5, E1, E2, O2, O5),
+#             list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
+#                           `4` = 3, `5` = 2, `6` = 1))
+#   )
+```
+
+##### 確認
+```{r}
+bfi_added %>% count(A1, A1_r)
+bfi_added %>% count(O2, O2_r)
 ```
 
 
@@ -267,52 +316,6 @@ bfi_a %>%
 ```
 
 
-### ★逆転項目の反転と合計得点の作成
-```{r}
-bfi_a <- 
-  bfi_a %>% 
-  mutate(A1r = recode(A1, `1` = 6L, `2` = 5L, `3` = 4L, 
-                          `4` = 3L, `5` = 2L, `6` = 1L),
-         total_a = A1r + A2 + A3 + A4 + A5)
-
-# 確認
-bfi_a %>%
-  select(A1, A1r, A2:A5, total_a) 
-```
-
-
-#### 逆転項目の反転と合計得点の作成(すべて)
-
-> keys.list <- list(agree=c("-A1","A2","A3","A4","A5"),
->                  conscientious=c("C1","C2","C3","-C4","-C5"),
->                  extraversion=c("-E1","-E2","E3","E4","E5"),
->                  neuroticism=c("N1","N2","N3","N4","N5"), 
->                  openness = c("O1","-O2","O3","O4","-O5")) 
-
-
-```{r}
-bfi_added <- 
-  bfi %>% 
-  mutate(across(c(A1, C4, C5, E1, E2, O2, O5),
-            list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
-                          `4` = 3, `5` = 2, `6` = 1))
-            )
-  )
-
-# dplyr 0.8.3以前
-# bfi_added <- 
-#   bfi %>% 
-#   mutate_at(vars(A1, C4, C5, E1, E2, O2, O5),
-#             list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
-#                           `4` = 3, `5` = 2, `6` = 1))
-#   )
-```
-
-##### 確認
-```{r}
-bfi_added %>% count(A1, A1_r)
-bfi_added %>% count(O2, O2_r)
-```
 
 #### 合計得点の作成
 
@@ -330,7 +333,8 @@ bfi_added_cor <-
   bfi_added %>% 
   select(agree:openness)
 
-cor(bfi_added_cor, use = "complete.obs") %>% round(digits = 1)
+cor(bfi_added_cor, use = "complete.obs") %>% 
+  round(digits = 1)
 
 rm(bfi_added_cor)
 ```
@@ -487,7 +491,8 @@ bfi_a %>%
 
 
 ```
-## データの連結まわり
+
+## データの連結
 ### idの作成
 ```{r}
 bfi_a <- 
@@ -499,24 +504,26 @@ bfi_a %>% select(id, everything())
 
 bfi_a
 ```
-### とにかく左側のdfに合わせる：left_join
+
+### 左側のdfに合わせる：left_join
 ```{r}
+# A1
 bfi_a_20_30 <- 
 bfi_a %>% 
   slice(c(20:30)) %>% 
-  select(id, A1, education)
+  select(id, education, A1)
 
 bfi_a_20_30
 
+# genderとage
 bfi_a_20_25 <- 
 bfi_a %>% 
   slice(20:25) %>% 
-  select(id, gender, age, education)
+  select(id, education, gender, age)
 
 bfi_a_20_25
 
 left_join(bfi_a_20_30, bfi_a_20_25, by = c("id", "education"))
-# left_join(bfi_a_20_30, bfi_a_20_25, by = c("id"))
 
 ```
 
@@ -534,21 +541,13 @@ semi_join(bfi_a_20_30, bfi_a_20_25, by = c("id", "education"))
 ```
 
 
-### 一致したケース以外の連結元データのみに
+### 連結元データを一致したケース以外に
 ```{r}
 anti_join(bfi_a_20_30, bfi_a_20_25, by = c("id", "education"))
 ```
 
 
-```{r eval=FALSE, include=FALSE}
-### （作成中）教育歴ごとにデータフレーム分割してリストに
 
-bfi_a_list <- 
-split(bfi_a, bfi_a$education)
-
-# リストの各要素の名前取得
-names(bfi_a_list)
-```
 
 ## 変数のrename
 
@@ -1233,11 +1232,11 @@ check_res2
 ## pivot_longerを使わずに関数で
 ### 層別変数を関数内に組み込みver
 ```{r}
-strat_freq <- function(df, outcome_var){
+fnest_tabyl <- function(df, outcome_var){
 df %>%
   nest(data = -c(gender, education)) %>% # あらかじめ層別変数を指定しておく
   mutate(freq =
-           map(data, ~ tabyl(.x, {{outcome_var}}, show_na = FALSE))) %>% # 欠損は除外して算出
+           map(data, ~ tabyl(.x, {{outcome_var}}, show_na = FALSE))) %>% # show_na = FALSEで欠損無しのpercentのみ算出
   select(-data) %>% 
   unnest(cols = c(freq)) %>% 
   # drop_na(education) %>% 
@@ -1245,10 +1244,10 @@ df %>%
 }  
 
 # 変数1つだけ
-strat_freq(bfi, A1)
+fnest_tabyl(bfi, A1)
 
 # 複数変数
-map(c("A1", "A2"), ~strat_freq(bfi, .))
+map(c("A1", "A2"), ~fnest_tabyl(bfi, .))
 ```
 
 ### 層別変数も引数で指定ver
@@ -1256,9 +1255,9 @@ map(c("A1", "A2"), ~strat_freq(bfi, .))
 * A1, A2をdropしているnest, pivot_longerのやり方とはnが異なる
 
 ```{r}
-strat_freq <- function(df, outcome_var, group_var){
+nest_tabyl <- function(df, outcome_var, nest_vars = NULL){
 df %>%
-  nest(data = -{{group_var}}) %>% 
+  nest(data = -{{nest_vars}}) %>% 
   mutate(freq =
            map(data, ~ tabyl(.x, {{outcome_var}}, show_na = FALSE))) %>% 
   select(-data) %>% 
@@ -1268,14 +1267,16 @@ df %>%
 }  
 
 # 関数の動作確認
-strat_freq(bfi, A1, c("gender"))
+nest_tabyl(bfi, A1)
+nest_tabyl(bfi, A1, c("gender"))
+nest_tabyl(bfi, A1, c("gender", "education"))
 
 
 
 # 複数層別，複数変数
 res_sf <- 
 quos(c(gender,education)) %>% 
-  map2(c("A1", "A2"), ~strat_freq(bfi, .y,  !!.x))
+  map2(c("A1", "A2"), ~nest_tabyl(bfi, .y,  !!.x))
 
 res_sf <- 
 res_sf %>% 
@@ -1901,6 +1902,78 @@ outcomes %>%
 res_l %>% 
   map(~tidy(., conf.int = TRUE)) %>% 
   bind_rows(.id = "outcome")
+```
+
+# 共分散構造分析
+
+* https://lavaan.ugent.be/tutorial/index.html
+* https://stats.idre.ucla.edu/r/seminars/rcfa/
+
+## CFA
+
+agree = A1_r + A2 + A3 + A4 + A5  
+conscientious = C1 + C2 + C3 + C4_r + C5_r  
+extraversion = E1_r + E2_r + E3 + E4 + E5  
+neuroticism = N1 + N2 + N3 + N4 + N5  
+openness =  O1 + O2_r + O3 + O4 + O5_r  
+
+```{r}
+library(lavaan)
+
+model1 <-  'A  =~ A1 + A2 + A3 + A4 + A5
+            C  =~ C1 + C2 + C3 + C4 + C5'
+
+fit <- cfa(model1, data = bfi_added)
+summary(fit, fit.measures = TRUE, standardized = TRUE)
+```
+
+### パス図1
+
+* https://cran.r-project.org/web/packages/tidySEM/vignettes/Plotting_graphs.html
+
+```{r}
+library(tidySEM)
+
+lay <- get_layout("", "", "A","","", "", "","C","", "",
+                  "A1", "A2", "A3", "A4", "A5", "C1", "C2", "C3", "C4","C5", rows = 2)
+
+graph_sem(fit, layout = lay)
+
+```
+
+### パス図2
+
+```{r}
+semPlot::semPaths(fit, "std")
+
+```
+
+
+### 適合度指標のみ
+```{r}
+res_fit <- 
+fitMeasures(fit,c("cfi","tli",
+                "rmsea","rmsea.ci.lower","rmsea.ci.upper",
+                "srmr"))
+# 整形
+res_fit <- 
+res_fit %>% 
+  enframe() %>% 
+  mutate(value = as.numeric(value))
+# %>% 
+#   add_row(name = NA_character_, 
+#           value = NA_real_, 
+#           .after = 7) # 空白行作成（csvに追記していくときに便利）
+
+res_fit
+```
+
+### 推定値のみ
+```{r}
+res_param <- 
+parameterEstimates(fit, standardized = TRUE)
+
+res_param
 ```
 
 
