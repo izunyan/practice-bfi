@@ -1904,6 +1904,82 @@ res_l %>%
   bind_rows(.id = "outcome")
 ```
 
+# クロンバックのアルファ
+
+* 因子ごとのdfに分割して，必要な情報を抽出して統合したdf作成
+
+```{r}
+# それぞれの因子の構成設問群をリストに（反転済み変数名）
+factor_items <-
+  list(agree = c("A1_r","A2","A3","A4","A5"),
+       conscientious = c("C1","C2","C3","C4_r","C5_r"),
+       extraversion = c("E1_r","E2_r","E3","E4","E5"),
+       neuroticism = c("N1","N2","N3","N4","N5"), 
+       openness = c("O1","O2_r","O3","O4","O5_r")) 
+
+# 各因子に対応する項目のみのdfのリスト作成
+bfi_by_factor <- 
+    map(factor_items, ~select(bfi_added, all_of(.)))
+
+# 各dfでalpha()実行
+res <-
+  map(bfi_by_factor, ~alpha(.))
+
+
+# 各結果からtotal要素を抜き出す
+res_alpha <-
+  map_df(res, "total", .id = "factor") %>%  # 必要なのはraw_alpha
+  select(factor, alpha = raw_alpha)
+
+
+# 各結果からalpha.drop要素を抜き出す
+alpha_item_del <-
+  map_df(res, "alpha.drop", .id = "factor") %>%
+  select(factor, alpha_if_del = raw_alpha) %>%
+  rownames_to_column(var = "item")
+
+# 各結果からitem.stats要素を抜き出す
+ir <-
+  map_df(res, "item.stats", .id = "factor") %>%
+  select(factor, r.drop, mean, sd) %>%
+  rownames_to_column(var = "item")
+
+# 各結果からresponse.freq要素を抜き出す（数値の列名がうまく読み込めないので一度mapで処理）
+freq <-
+  map(res, "response.freq") %>%
+  map(~as_tibble(., rownames = "item")) %>%
+  map(~select(., item,
+               answer_1 = "1",
+               answer_2 = "2",
+               answer_3 = "3",
+               answer_4 = "4")) %>%
+  bind_rows()
+
+
+
+# 連結
+res_alpha_df <-
+alpha_item_del %>%
+  left_join(ir) %>%
+  left_join(freq) %>%
+  left_join(res_alpha)
+
+
+
+# 変数並び変え
+res_alpha_df <-
+  res_alpha_df %>%
+  relocate(factor, item, alpha, alpha_if_del, r.drop, mean, sd, answer_1:answer_4)
+
+res_alpha_df
+
+# 不要オブジェクト削除
+rm(factor_items, bfi_by_factor, res, alpha_item_del, ir, freq, res_alpha, res_alpha_df)
+
+```
+
+
+
 # 共分散構造分析
 
 * https://lavaan.ugent.be/tutorial/index.html
