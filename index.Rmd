@@ -81,6 +81,13 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 * `shift + end` 行末まで選択
 * `ctr+ shift + →` 次の区切りまで選択
+* `Home`/`End` または `Alt + left/right` 左または右端まで移動
+
+* `ctrl + i` 再インデント（階層構造をきれいにする）
+
+* `Alt + Shift + 終点をマウスクリック` 矩形選択
+
+* パイプでつながれたコード上で変数を選択して `ctrl + Alt + Shift + M`すると，一気に変更可能
 
 # データの読み込み
 ## windowsで日本語（shift-jis）のデータを読むとき
@@ -1937,7 +1944,7 @@ res <-
 # 各結果からtotal要素を抜き出す
 res_alpha <-
   map_df(res, "total", .id = "factor") %>%  # 必要なのはraw_alpha
-  select(factor, alpha = raw_alpha)
+  select(factor, alpha = raw_alpha, factor_mean = mean, factor_sd = sd)
 
 
 # 各結果からalpha.drop要素を抜き出す
@@ -1977,15 +1984,27 @@ alpha_item_del %>%
 # 変数並び変え
 res_alpha_df <-
   res_alpha_df %>%
-  relocate(factor, item, alpha, alpha_if_del, r.drop, mean, sd, answer_1:answer_4)
+  relocate(factor, item, factor_mean, factor_sd, alpha, alpha_if_del, r.drop, mean, sd, answer_1:answer_4)
 
-res_alpha_df
+res_alpha_df %>% 
+  head()
+
 
 # 不要オブジェクト削除
 rm(factor_items, bfi_by_factor, res, alpha_item_del, ir, freq, res_alpha, res_alpha_df)
 
 ```
 
+## 確認
+```{r}
+bfi_added %>% 
+ mutate(agree = agree/5) %>%   
+ summarise(across(c(A2, agree),
+                  list(mean = ~mean(., na.rm = TRUE),
+                       sd   = ~sd(., na.rm = TRUE))
+                  )
+           )
+```
 
 
 # 共分散構造分析
@@ -2068,6 +2087,20 @@ res_param
   + Schreiber et al., (2006). [Reporting structural equation modeling and confirmatory factor analysis results: A review.](https://www.tandfonline.com/doi/abs/10.3200/JOER.99.6.323-338) The Journal of educational research, 99(6), 323-338. の**table2**
   + Floyd, F. J., & Widaman, K. F. (1995). [Factor analysis in the development and refinement of clinical assessment instruments.](https://psycnet.apa.org/doiLanding?doi=10.1037%2F1040-3590.7.3.286) Psychological assessment, 7(3), 286-299. の**p294**
   
+## サンプルサイズの計算
+
+* https://github.com/moshagen/semPower
+
+```{r eval=FALSE, include=FALSE}
+# semPower::
+
+
+# 自由度：観測変数の数＋係数の数（それぞれ-1）＋誤差の数＋潜在変数の数
+
+# https://dominikfroehlich.com/wp-content/uploads/2018/07/Analyses-1.html
+# https://psu-psychology.github.io/r-bootcamp-2018/talks/lavaan_tutorial.html#path-analysis-on-housing-data
+
+```
 
 
 
