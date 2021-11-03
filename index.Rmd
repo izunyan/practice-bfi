@@ -324,7 +324,7 @@ bfi_a %>%
 
 
 
-#### 合計得点の作成
+#### ★合計得点の作成
 
 ```{r}
 bfi_added <- 
@@ -1919,9 +1919,58 @@ res_l %>%
   bind_rows(.id = "outcome")
 ```
 
+# 回答のパターンチェック
+
+## 全て同じ人を特定
+
+* https://stackoverflow.com/questions/37980536/how-can-i-write-an-r-script-to-check-for-straight-lining-i-e-whether-for-any
+
+```{r}
+bfi_only <- 
+  bfi %>% 
+  select(A1:O5)
+
+
+bfi_only$all_same <- 
+  apply(bfi_only, 1, function(row) all(row == row[1]))
+
+
+bfi_only %>%
+  count(all_same)
+
+# 次のパッケージで検討のため削除
+bfi_only <- 
+  bfi_only %>% 
+  select(!all_same)
+```
+
+
+## carelessパッケージ
+
+* https://github.com/ryentes/careless
+* 個人ごとに回答のSDを算出
+
+```{r}
+
+bfi_only %>% 
+careless::irv() %>% 
+  enframe(name = "id", value = "sd")
+
+
+# 全体 + 分割して算出（回答の前半と後半で比べるとか）
+bfi_only %>% 
+careless::irv(split = TRUE, num.split = 4) %>% 
+  head()
+
+```
+
+
+
 # クロンバックのアルファ
 
 * 因子ごとのdfに分割して，必要な情報を抽出して統合したdf作成
+* ※要確認
+  + factor_meanとfactor_sdが，listwiseの値と違う？→算出プロセスが分からないので不使用
 
 ```{r}
 # それぞれの因子の構成設問群をリストに（反転済み変数名）
@@ -1938,7 +1987,7 @@ bfi_by_factor <-
 
 # 各dfでalpha()実行
 res <-
-  map(bfi_by_factor, ~alpha(.))
+  map(bfi_by_factor, alpha)
 
 
 # 各結果からtotal要素を抜き出す
@@ -1991,19 +2040,46 @@ res_alpha_df %>%
 
 
 # 不要オブジェクト削除
-rm(factor_items, bfi_by_factor, res, alpha_item_del, ir, freq, res_alpha, res_alpha_df)
+rm(factor_items,alpha_item_del, ir, freq, res_alpha, res_alpha_df)
 
 ```
 
 ## 確認
 ```{r}
 bfi_added %>% 
- mutate(agree = agree/5) %>%   
- summarise(across(c(A2, agree),
+  select(A2:A5, A1_r) %>% 
+  drop_na() %>% 
+  mutate(agree = rowMeans(across(everything(), na.rm = TRUE))) %>% 
+  summarise(across(c(agree),
                   list(mean = ~mean(., na.rm = TRUE),
-                       sd   = ~sd(., na.rm = TRUE))
+                       sd   = ~sd(., na.rm = TRUE),
+                       n    = ~sum(!is.na(.)))
                   )
            )
+
+
+res_drop <-
+  map(bfi_by_factor, drop_na) %>% # 因子ごとにそれぞれリストワイズ
+  map(alpha)
+
+
+# 各結果からtotal要素を抜き出す
+  map_df(res_drop, "total", .id = "factor") %>%  # 必要なのはraw_alpha
+  select(factor, factor_mean = mean, factor_sd = sd)
+
+
+
+bfi_added %>% 
+drop_na(A2) %>%   
+ summarise(across(c(A2),
+                  list(mean = ~mean(., na.rm = TRUE),
+                       sd   = ~sd(., na.rm = TRUE),
+                       n    = ~sum(!is.na(.)))
+                  )
+           )
+
+
+rm( bfi_by_factor, res, res_drop)
 ```
 
 
