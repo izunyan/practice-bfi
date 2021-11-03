@@ -1633,7 +1633,7 @@ personograph::personograph(parts,
                                          女性 = "deepskyblue3"))
 ```
 
-## 設問ごとの可視化
+## 設問ごとの可視化 {#likert}
 
 * `likert()`はdata.frame形式
   + https://stackoverflow.com/questions/46646308/problems-with-r-likert-package
