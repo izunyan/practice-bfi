@@ -83,7 +83,8 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 * `ctr+ shift + →` 次の区切りまで選択
 * `Home`/`End` または `Alt + left/right` 左または右端まで移動
 
-* `ctrl + i` 再インデント（階層構造をきれいにする）
+* `ctrl + I` 再インデント（階層構造をきれいにする）
+* `ctrl + shift + A` 再フォーマット（複数行にする）
 
 * `Alt + Shift + 終点をマウスクリック` 矩形選択
 
@@ -324,7 +325,7 @@ bfi_a %>%
 
 
 
-#### ★合計得点の作成
+### ★合計得点の作成
 
 ```{r}
 bfi_added <- 
@@ -391,20 +392,27 @@ bfi_a %>%
   print(n = 10)
 ```
 
-### 欠損値の置き換え
-```{r}
+### （動かないので修正中）欠損値の置き換え
+```{r eval=FALSE, include=FALSE}
+bfi_a <- 
+  bfi_a |> 
+  mutate(education2 = as.character(education),
+         A1nm = as.character(A1),
+         A2nm = as.character(A2))
+
+
 bfi_anm <- 
 bfi_a %>% 
-  mutate(education = replace_na(education, "unknown"), # 因子型には使えない？
-              A1nm = replace_na(A1, "不明"),           # 文字型になる
-              A2nm = replace_na(A2, "不明"))           # 文字型になる
+  mutate(education2 = replace_na(education2, "unknown"), # 因子型には使えない？
+              A1nm = replace_na(A1, "不明"),           # 文字型に
+              A2nm = replace_na(A2, "不明"))           # 文字型に
   
-bfi_anm %>% count(education)
+bfi_anm %>% count(education2)
 bfi_anm %>% count(A1nm)
 ```
 
-### 特定の値を欠損値にする
-```{r}
+### （動かないので修正中）特定の値を欠損値にする
+```{r eval=FALSE, include=FALSE}
 bfi_anm %>% 
   mutate(A1nmr = na_if(A1nm, "不明")) %>% 
   count(A1nmr)
@@ -1619,11 +1627,11 @@ parts <- c(male = 33, female = 67)
 waffle::waffle(parts)
 ```
 
-## 人型グラフ
+## （動かないので修正中,現在CRANになし）人型グラフ
 
 * 割合を人型の図の数で示す
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 # personographパッケージをここだけで一時的に読んでいるためpersonograph::としている
 parts <- list(男性 = 0.33, 女性 = 0.67)
 personograph::personograph(parts)
@@ -1633,7 +1641,7 @@ personograph::personograph(parts,
                                          女性 = "deepskyblue3"))
 ```
 
-## 設問ごとの可視化 {#likert}
+## 設問ごとの可視化
 
 * `likert()`はdata.frame形式
   + https://stackoverflow.com/questions/46646308/problems-with-r-likert-package
