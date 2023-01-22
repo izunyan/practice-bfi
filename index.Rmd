@@ -147,8 +147,8 @@ names(bfi)
 * 以下のコードでbfi_aのデータセットを使うので，ここの実行は必須
 
 ```{r warning=FALSE, paged.print=FALSE}
-bfi_a <- bfi %>%
-  select(A1:A5,gender,education,age) %>% 
+bfi_a <- bfi |>
+  select(A1:A5,gender,education,age) |> 
   as_tibble()
 
 bfi_a
@@ -158,18 +158,18 @@ bfi_a
 ```{r}
 var_a <- c("A1","A5")
 
-bfi_a %>% select(all_of(var_a))
-bfi_a %>% select(!any_of(var_a)) # var_aのリスト以外を選ぶ
+bfi_a |> select(all_of(var_a))
+bfi_a |> select(!any_of(var_a)) # var_aのリスト以外を選ぶ
 
-# bfi_a %>% select(!one_of(var_a)) # var_aのリスト以外を選ぶ
+# bfi_a |> select(!one_of(var_a)) # var_aのリスト以外を選ぶ
 ```
 
 ### ケースの選択
 ```{r}
-bfi_a %>% 
+bfi_a |> 
   filter(A1 %in% c(1,2,3))
 
-bfi_a %>% 
+bfi_a |> 
   filter(!(A1 %in% c(1,2,3))) # A1が1-3以外 
 ```
 
@@ -178,8 +178,8 @@ bfi_a %>%
 
 ```{r}
 bfi_a <- 
-  bfi_a %>% 
-  mutate(across(c("gender", "education"), factor)) %>% 
+  bfi_a |> 
+  mutate(across(c("gender", "education"), factor)) |> 
   mutate(gender = fct_recode(gender, male   = "1", 
                                      female = "2"),
          education = fct_recode(education, "HS" = "1",
@@ -210,8 +210,8 @@ skim(bfi_a)
 
 # データフレームに
 # bfi_a_summary <- 
-# bfi_a %>%
-#   group_by(gender) %>% # 層別
+# bfi_a |>
+#   group_by(gender) |> # 層別
 # skimr::skim_to_wide()
 # 
 # bfi_a_summary
@@ -224,13 +224,13 @@ skim(bfi_a)
 ### 逆転項目の反転と合計得点の作成
 ```{r}
 bfi_a <- 
-  bfi_a %>% 
+  bfi_a |> 
   mutate(A1r = recode(A1, `1` = 6L, `2` = 5L, `3` = 4L, 
                           `4` = 3L, `5` = 2L, `6` = 1L),
          total_a = A1r + A2 + A3 + A4 + A5)
 
 # 確認
-bfi_a %>%
+bfi_a |>
   select(A1, A1r, A2:A5, total_a) 
 ```
 
@@ -246,16 +246,26 @@ bfi_a %>%
 
 ```{r}
 bfi_added <- 
-  bfi %>% 
+  bfi |> 
   mutate(across(c(A1, C4, C5, E1, E2, O2, O5),
-            list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
+            list(r = \(x) recode(x, `1` = 6, `2` = 5, `3` = 4, 
                           `4` = 3, `5` = 2, `6` = 1))
             )
   )
 
+# purrr 1.0.0より前
+# bfi_added <- 
+#   bfi |> 
+#   mutate(across(c(A1, C4, C5, E1, E2, O2, O5),
+#             list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
+#                           `4` = 3, `5` = 2, `6` = 1))
+#             )
+#   )
+
+
 # dplyr 0.8.3以前
 # bfi_added <- 
-#   bfi %>% 
+#   bfi |> 
 #   mutate_at(vars(A1, C4, C5, E1, E2, O2, O5),
 #             list(r = ~recode(., `1` = 6, `2` = 5, `3` = 4, 
 #                           `4` = 3, `5` = 2, `6` = 1))
@@ -264,23 +274,23 @@ bfi_added <-
 
 ##### 確認
 ```{r}
-bfi_added %>% count(A1, A1_r)
-bfi_added %>% count(O2, O2_r)
+bfi_added |> count(A1, A1_r)
+bfi_added |> count(O2, O2_r)
 ```
 
 
 ### 欠損値の数一覧
 ```{r}
-bfi_a %>% 
+bfi_a |> 
   summarise(across(A1:A5,
-    list(n = ~sum(is.na(.))))
-  ) %>% 
+    list(n = \(x) sum(is.na(x))))
+  ) |> 
   pivot_longer(everything())
 
-bfi_a %>% 
+bfi_a |> 
   summarise(across(everything(),
-    list(n = ~sum(is.na(.))))
-                ) %>% 
+    list(n =  \(x) sum(is.na(x))))
+                ) |> 
   pivot_longer(everything())
 
 ```
@@ -295,8 +305,8 @@ bfi_a %>%
 * 最初の列の最初の行はリストワイズした時の人数(各列NA = 0の数）
 
 ```{r}
-bfi_a %>% 
-  select(A1:A5) %>% 
+bfi_a |> 
+  select(A1:A5) |> 
 mice::md.pattern()
 ```
 
@@ -308,8 +318,8 @@ mice::md.pattern()
 * mm: 2つの変数がmissing
 
 ```{r}
-bfi_a %>% 
-  select(A1:A5) %>% 
+bfi_a |> 
+  select(A1:A5) |> 
 mice::md.pairs()
 ```
 
@@ -317,8 +327,8 @@ mice::md.pairs()
 ##### naniar
 ```{r eval=FALSE, include=FALSE}
 library(naniar)
-bfi_a %>% 
-    select(A1:A5) %>% 
+bfi_a |> 
+    select(A1:A5) |> 
     vis_miss()
 
 ```
@@ -329,7 +339,7 @@ bfi_a %>%
 
 ```{r}
 bfi_added <- 
-  bfi_added %>% 
+  bfi_added |> 
   mutate(agree = A1_r + A2 + A3 + A4 + A5,
          conscientious = C1 + C2 + C3 + C4_r + C5_r,
          extraversion = E1_r + E2_r + E3 + E4 + E5,
@@ -338,10 +348,10 @@ bfi_added <-
   )
 
 bfi_added_cor <- 
-  bfi_added %>% 
+  bfi_added |> 
   select(agree:openness)
 
-cor(bfi_added_cor, use = "complete.obs") %>% 
+cor(bfi_added_cor, use = "complete.obs") |> 
   round(digits = 1)
 
 rm(bfi_added_cor)
@@ -352,13 +362,13 @@ rm(bfi_added_cor)
 
 #### 合計得点の作成(関数)
 ```{r}
-bfi %>%
-  select(starts_with("n")) %>%
+bfi |>
+  select(starts_with("n")) |>
   names()
 
-bfi_added %>% 
-  mutate(neuroticism2 = rowSums(across(c(N1:N5)))) %>% 
-  select(N1:N5,neuroticism, neuroticism2) %>% 
+bfi_added |> 
+  mutate(neuroticism2 = rowSums(across(c(N1:N5)))) |> 
+  select(N1:N5,neuroticism, neuroticism2) |> 
   head()
 ```
 
@@ -371,29 +381,31 @@ bfi_a %>%
   mutate(total_a2 = rowSums(.[c(2:5, 9)])) # na.rm = TRUEにするとNAは0扱いになる
 
 # 確認
-bfi_a %>%
-  select(A1r, A2:A5, total_a, total_a2) %>% 
+bfi_a |>
+  select(A1r, A2:A5, total_a, total_a2) |> 
   head()
 ```
 
 
 ### 文字の指定によるデータの表示
 ```{r}
-bfi_a %>% 
-  count(education) %>% 
+bfi_a |> 
+  count(education) |> 
   filter(str_detect(education, "college"))
 ```
 
 ### 欠損のある得点の表示
 ```{r  warning=FALSE, paged.print=FALSE}
-bfi_a %>%
-  select(A1, A1r, A2:A5, total_a, total_a2) %>% 
-  filter(is.na(total_a)) %>% 
+bfi_a |>
+  select(A1, A1r, A2:A5, total_a, total_a2) |> 
+  filter(is.na(total_a)) |> 
   print(n = 10)
 ```
 
-### （動かないので修正中）欠損値の置き換え
-```{r eval=FALSE, include=FALSE}
+### 欠損値NAを他の値に置き換え: replace_na
+#### 文字型の場合
+```{r}
+# 文字型にした列を新たに作成
 bfi_a <- 
   bfi_a |> 
   mutate(education2 = as.character(education),
@@ -402,49 +414,127 @@ bfi_a <-
 
 
 bfi_anm <- 
-bfi_a %>% 
+bfi_a |> 
   mutate(education2 = replace_na(education2, "unknown"), # 因子型には使えない？
-              A1nm = replace_na(A1, "不明"),           # 文字型に
-              A2nm = replace_na(A2, "不明"))           # 文字型に
+              A1nm = replace_na(A1nm, "不明"),           # 文字型に
+              A2nm = replace_na(A2nm, "不明"))           # 文字型に
   
-bfi_anm %>% count(education2)
-bfi_anm %>% count(A1nm)
+bfi_anm |> count(education2)
+bfi_anm |> count(A1nm)
 ```
 
-### （動かないので修正中）特定の値を欠損値にする
-```{r eval=FALSE, include=FALSE}
-bfi_anm %>% 
-  mutate(A1nmr = na_if(A1nm, "不明")) %>% 
-  count(A1nmr)
+#### 数値の場合
+```{r}
+test <- 
+  tribble(~x,
+          1,
+          2,
+          NA)
+
+test |>
+  mutate(x2 = replace_na(x, 99))
+
+test |> 
+  replace_na(list(x = 99))
+
+
+```
+
+
+### 特定の値を欠損値にする: na_if
+
+#### 文字型の場合
+```{r}
+bfi_anm |> 
+  mutate(A1nmr = na_if(A1nm, "不明")) |> 
+  count(A1nm, A1nmr)
 
 bfi_arm2 <-
-bfi_anm %>%
+bfi_anm |>
   mutate(across(c(A1nm, A2nm),
-            list(~na_if(., "不明"))
+            list( \(x) na_if(x, "不明"))
                )
         )
 
 
-# dplyr 0.8.3以前
+# purrr 1.0.0より前
+# bfi_arm2 <-
+# bfi_anm |>
+#   mutate(across(c(A1nm, A2nm),
+#             list(~na_if(., "不明"))
+#                )
+#         )
+
+
+# dplyr 0.8.3より前
 # bfi_arm2 <- 
-# bfi_anm %>% 
+# bfi_anm |> 
 #   mutate_at(vars(A1nm, A2nm),
 #             list(~na_if(., "不明"))
 #   )
 
-bfi_arm2 %>% count(A1nm)
-bfi_arm2 %>% count(A2nm)
+bfi_arm2 |> count(A1nm)
+bfi_arm2 |> count(A2nm)
 
 
 
+```
+
+#### 数値型の場合
+```{r}
+test <- 
+  tribble(~x,
+          1,
+          2,
+          0,
+          99)
+
+test |> 
+  mutate(x2 = na_if(x, 0),
+         x2 = na_if(x2, 99))
+
+```
+
+
+#### 別解
+##### 文字型の場合
+```{r}
+
+bfi_anm |> 
+  count(A1nm)
+
+bfi_anm |> 
+  mutate(A1nmr = if_else(A1nm == "不明", NA_character_, A1nm)) |> 
+  count(A1nm, A1nmr)
+
+
+
+
+```
+
+```{r include=FALSE}
 rm(bfi_anm, bfi_arm2)
 ```
+
+
+##### 数値の場合
+```{r}
+
+test |> 
+  mutate(x2 = if_else(x %in% c(0, 99), NA_real_, x))
+
+test |> 
+  mutate(x2 = if_else(x == 0 | x == 99, NA_real_, x))
+
+
+```
+
 
 
 ## 年齢層変数作成
 ```{r}
 bfi_a <- 
-bfi_a %>% 
+bfi_a |> 
   mutate(agec = case_when(
           age < 20              ~ "20歳未満", 
           age >= 20  & age < 30 ~ "30歳未満", 
@@ -454,7 +544,7 @@ bfi_a %>%
           age >= 60             ~ "60歳以上"  
   ))
 
-bfi_a %>% 
+bfi_a |> 
   count(age, agec)
 ```
 
@@ -462,7 +552,7 @@ bfi_a %>%
 ```{r}
 # 特定範囲の値を欠損値に
 bfi_am <- 
-  bfi_a %>% 
+  bfi_a |> 
   mutate(age = case_when(
             age <  10 ~ NA_integer_, # 10歳未満はNA，整数の場合はこれ
             age >= 70 ~ NA_integer_, # 70歳はNA
@@ -470,7 +560,7 @@ bfi_am <-
          )
 
 bfi_am <- 
-bfi_am %>% 
+bfi_am |> 
   mutate(agec = case_when(
           age <  20             ~ "20歳未満", 
           age >= 20  & age < 30 ~ "30歳未満", 
@@ -481,26 +571,26 @@ bfi_am %>%
           is.na(age)            ~ "年齢不明" 
   ))
 
-bfi_am %>% 
+bfi_am |> 
   count(age, agec)
 ```
 
 ### 年齢層変数作成(cut_intervalで自動的に)
 ```{r}
 # カテゴリの各区間の長さが等しくなるように
-bfi_a %>% 
-  mutate(agec2 = cut_interval(age, 5)) %>% # 分割の数
+bfi_a |> 
+  mutate(agec2 = cut_interval(age, 5)) |> # 分割の数
   count(agec2)
 
 
 # カテゴリの各区間の人数が等しくなるように
-bfi_a %>% 
-  mutate(agec2 = cut_number(age, 5)) %>% # 分割の数
+bfi_a |> 
+  mutate(agec2 = cut_number(age, 5)) |> # 分割の数
   count(agec2)
 
 # カテゴリの各区間の長さを指定
-bfi_a %>% 
-  mutate(agec2 = cut_width(age, width = 20, center = 10)) %>% 
+bfi_a |> 
+  mutate(agec2 = cut_width(age, width = 20, center = 10)) |> 
                      # width = 区間の長さ, デフォルトだとcenter = 0になってしまうので10に
   count(agec2)
 
@@ -511,11 +601,11 @@ bfi_a %>%
 ### idの作成
 ```{r}
 bfi_a <- 
-bfi_a %>% 
+bfi_a |> 
   mutate(id = row_number())
 
 bfi_a <- 
-bfi_a %>% select(id, everything()) 
+bfi_a |> select(id, everything()) 
 
 bfi_a
 ```
@@ -524,16 +614,16 @@ bfi_a
 ```{r}
 # A1
 bfi_a_20_30 <- 
-bfi_a %>% 
-  slice(c(20:30)) %>% 
+bfi_a |> 
+  slice(c(20:30)) |> 
   select(id, education, A1)
 
 bfi_a_20_30
 
 # genderとage
 bfi_a_20_25 <- 
-bfi_a %>% 
-  slice(20:25) %>% 
+bfi_a |> 
+  slice(20:25) |> 
   select(id, education, gender, age)
 
 bfi_a_20_25
@@ -572,15 +662,15 @@ anti_join(bfi_a_20_30, bfi_a_20_25, by = c("id", "education"))
 
 ```{r}
 bfi_a_2018 <- 
-bfi_a %>% 
-  slice(1:5) %>% #小さくするため最初の5名のみ
-  select(id, A1:A3, gender) %>% 
+bfi_a |> 
+  slice(1:5) |> #小さくするため最初の5名のみ
+  select(id, A1:A3, gender) |> 
   mutate(year = 2018)
 
 bfi_a_2019 <- 
-bfi_a %>% 
-  slice(1:5) %>% 
-  select(id, A1:A3, gender) %>% 
+bfi_a |> 
+  slice(1:5) |> 
+  select(id, A1:A3, gender) |> 
   mutate(year = 2019)
 
 bfi_a_2018
@@ -594,30 +684,30 @@ bfi_a_2019
 
 ```{r}
 bfi_a_2018w <- 
-  bfi_a_2018 %>% 
-  rename_with(~str_c(., "_18"),
-              c(-id, -gender, -year)) %>% 
+  bfi_a_2018 |> 
+  rename_with(\(x) str_c(x, "_18"),
+              !c(id, gender, year)) |> 
   select(-year)
 
 bfi_a_2019w <- 
-  bfi_a_2019 %>% 
-  rename_with(~str_c(., "_19"),
-              c(-id, -gender))
+  bfi_a_2019 |> 
+  rename_with(\(x) str_c(x, "_19"),
+              !c(id, gender))
 
 # dplyr 0.8.3以前
 # bfi_a_2018w <- 
-#   bfi_a_2018 %>% 
+#   bfi_a_2018 |> 
 #   rename_at(vars(-id, -gender, -year),
-#             list(~str_c(., "_18"))) %>% 
+#             list(~str_c(., "_18"))) |> 
 #   select(-year)
 # 
 # bfi_a_2019w <- 
-#   bfi_a_2019 %>% 
+#   bfi_a_2019 |> 
 #   rename_at(vars(-id, -gender),
 #             list(~str_c(., "_19")))
 
 bfi_a_all <- 
-  full_join(bfi_a_2018w, bfi_a_2019w) %>% 
+  full_join(bfi_a_2018w, bfi_a_2019w) |> 
   select(id, gender,  everything())
 
 bfi_a_all
@@ -639,18 +729,26 @@ set_names(bfi_a_list, c("2018", "2019"))
 names(bfi_a_list)
 
 # リストの要素名をそれぞれのdfの変数の接尾辞に
-bfi_a_list <- 
- imap(bfi_a_list,
-       function(a,b){
-         rename_with(a,
-         ~{str_c(., b, sep = "_")}, !id)}
-      )
 
-bfi_a_list %>% head()
+imap(bfi_a_list,
+     \(a,b){
+       rename_with(a,
+                   \(x){str_c(x, b, sep = "_")}, !id)}
+)
+
+# purrr 1.0.0より前
+# bfi_a_list <- 
+#  imap(bfi_a_list,
+#        function(a,b){
+#          rename_with(a,
+#          ~{str_c(., b, sep = "_")}, !id)}
+#       )
+
+bfi_a_list |> head()
 
 # リスト内のデータフレームを横に連結
 bfi_a_all_wide <-
-  bfi_a_list %>%
+  bfi_a_list |>
   reduce(full_join, by = "id")
 
  
@@ -680,21 +778,21 @@ bfi_a_all_wide
 # 
 # # リスト内のデータフレームを横に連結
 # bfi_a_all_wide <- 
-#   bfi_a_list %>% 
+#   bfi_a_list |> 
 #   reduce(full_join, by = c("id", "gender"))
 # 
 # # 変数名からbfi_aを取る
 # bfi_a_all_wide <- 
-#   bfi_a_all_wide %>% 
-#   select(-starts_with("year")) %>% 
+#   bfi_a_all_wide |> 
+#   select(-starts_with("year")) |> 
 #   rename_with(~str_replace(., "bfi_a_", ""),
 #               matches("bfi_a"))
 
 
 # dplyr 0.8.3以前
 # bfi_a_all_wide <- 
-#   bfi_a_all_wide %>% 
-#   select(-starts_with("year")) %>% 
+#   bfi_a_all_wide |> 
+#   select(-starts_with("year")) |> 
 #   rename_at(vars(matches("bfi_a")),
 #             list(~str_replace(., "bfi_a_", "")))
 ```
@@ -703,8 +801,8 @@ bfi_a_all_wide
 ## リストの深い階層から値を取り出す（α係数を例に）
 ### データフレームのリスト作成
 ```{r}
-bfi_la <- bfi %>% select(A2:A4)
-bfi_lc <- bfi %>% select(C1:C3)
+bfi_la <- bfi |> select(A2:A4)
+bfi_lc <- bfi |> select(C1:C3)
   
 bfi_list <- list(bfi_la, bfi_lc)
 ```
@@ -714,7 +812,7 @@ bfi_list <- list(bfi_la, bfi_lc)
 bfi_alpha <- 
   map(bfi_list, alpha)
 
-bfi_alpha %>% 
+bfi_alpha |> 
   str(list.len = 3) # 各要素の最初の3つのみ表示
 ```
 
@@ -736,8 +834,8 @@ map_dbl(alpha_total, "raw_alpha")
 # データフレームの表示
 ```{r}
 bfi_s <- 
- bfi %>% 
- slice(1:15) %>% 
+ bfi |> 
+ slice(1:15) |> 
  select(A1:A5, gender, education, age)
 ```
 
@@ -792,7 +890,7 @@ table1::table1(~ A1 + A2 + A3 + age + education | gender, data = bfi_a)
 ## 変数個別
 ### summarise
 ```{r}
-bfi %>%
+bfi |>
   summarise(A1 = mean(A1, na.rm = TRUE),
             A2 = mean(A2, na.rm = TRUE))
 ```
@@ -800,34 +898,34 @@ bfi %>%
 ### 複数変数を対象
 ```{r}
 
-bfi %>%
+bfi |>
   summarise(across(c(A1, A2), 
                mean, na.rm = TRUE)
   )
 
 # dplyr 0.8.3以前
-# bfi %>%
+# bfi |>
 #   summarise_at(vars(A1, A2), 
 #                mean, na.rm = TRUE)
 ```
 
 ### 関数も個別に(1)
 ```{r}
-bfi %>% 
+bfi |> 
   summarise(across(c(A1, A2), 
                list(mean, sd), 
                na.rm = TRUE)
   )
 
 # dplyr 0.8.3以前
-# bfi %>% 
+# bfi |> 
 #   summarise_at(vars(A1, A2), 
 #                list(mean, sd), 
 #                na.rm = TRUE)
 
 
 # こちらでもOK
-# bfi %>%
+# bfi |>
 #   summarise_at(vars(A1, A2),funs(mean(., na.rm = TRUE),
 #                                     sd(., na.rm = TRUE)
 #                                   )
@@ -840,8 +938,8 @@ bfi %>%
 * nはリストワイズ
 
 ```{r eval=FALSE, include=FALSE}
-bfi %>%
-  drop_na(A1,A2) %>% 
+bfi |>
+  drop_na(A1,A2) |> 
   summarise(across(c(A1, A2),
                list(mean,
                     sd,
@@ -853,8 +951,8 @@ bfi %>%
 
 
 # dplyr 0.8.3以前
-# bfi %>%
-#   drop_na(A1,A2) %>% 
+# bfi |>
+#   drop_na(A1,A2) |> 
 #   summarise_at(vars(A1, A2),
 #                list(mean,
 #                     sd,
@@ -862,8 +960,8 @@ bfi %>%
 #                     )
 #                )
 
-# bfi %>%
-#   drop_na(A1,A2) %>% 
+# bfi |>
+#   drop_na(A1,A2) |> 
 #   summarise_at(vars(A1, A2),
 #                funs(mean,
 #                     sd,
@@ -877,18 +975,25 @@ bfi %>%
 * nはペアワイズ
 
 ```{r}
-bfi %>%
+bfi |>
   summarise(across(c(A1, A2),
-               list(mean = ~mean(., na.rm = TRUE),
-                      sd = ~sd(., na.rm = TRUE),
-                       n = ~sum(!is.na(.)))    # 欠損のない行の合計
+               list(mean = \(x) mean(x, na.rm = TRUE),
+                      sd = \(x) sd(x, na.rm = TRUE),
+                       n = \(x) sum(!is.na(x)))    # 欠損のない行の合計
                   )
                )
 
-
+# purrr 1.0.0より前
+# bfi |>
+#   summarise(across(c(A1, A2),
+#                list(mean = ~mean(., na.rm = TRUE),
+#                       sd = ~sd(., na.rm = TRUE),
+#                        n = ~sum(!is.na(.)))    # 欠損のない行の合計
+#                   )
+#                )
 
 # dplyr 0.8.3以前
-# bfi %>%
+# bfi |>
 #   summarise_at(vars(A1, A2),
 #                list(~mean(., na.rm = TRUE),
 #                     ~sd(., na.rm = TRUE),
@@ -896,7 +1001,7 @@ bfi %>%
 #                     )
 #                )
 
-# bfi %>%
+# bfi |>
 #   summarise_at(vars(A1, A2),
 #                funs(mean(., na.rm = TRUE),
 #                     sd(., na.rm = TRUE),
@@ -907,74 +1012,74 @@ bfi %>%
 
 ### 選択した変数すべて
 ```{r}
-bfi %>%
-  select(A1:A5) %>%
+bfi |>
+  select(A1:A5) |>
   summarise(across(everything(), 
             mean, na.rm = TRUE) # , .names = "{col}_mean"
   )
             
 
 # dplyr 0.8.3以前
-# bfi %>%
-#   select(A1:A5) %>% 
+# bfi |>
+#   select(A1:A5) |> 
 #   summarise_all(mean, na.rm = TRUE)
 ```
 
 ## 層別
 ```{r}
-bfi %>%
-  select(A1:A5, gender) %>% 
-  group_by(gender) %>% 
+bfi |>
+  select(A1:A5, gender) |> 
+  group_by(gender) |> 
   summarise(across(everything(),
     mean, na.rm = TRUE)
   )
 
 # dplyr 0.8.3以前
-# bfi %>%
-#   select(A1:A5, gender) %>% 
-#   group_by(gender) %>% 
+# bfi |>
+#   select(A1:A5, gender) |> 
+#   group_by(gender) |> 
 #   summarise_all(mean, na.rm = TRUE)
 ```
 
 ### 層別および全体の値を一度に算出
 ```{r}
-bfi_a %>% # 性別の結果
-  group_by(gender) %>% 
+bfi_a |> # 性別の結果
+  group_by(gender) |> 
   summarise(across(c(A1, A2),
-               list(~mean(., na.rm = TRUE),
-                      ~sd(., na.rm = TRUE),
-                 n = ~sum(!is.na(.)))
+               list(\(x) mean(x, na.rm = TRUE),
+                    \(x) sd(x, na.rm = TRUE),
+                 n = \(x) sum(!is.na(x)))
                     )
-               ) %>% 
+               ) %>% # native pipeが動かないため 
   bind_rows(.,         # 上で作ったデータフレームがここに
-            bfi_a %>%  # 全体の結果
+            bfi_a |>  # 全体の結果
                 summarise(across(c(A1, A2),
-                             list(~mean(., na.rm = TRUE),
-                                    ~sd(., na.rm = TRUE),
-                               n = ~sum(!is.na(.)))
+               list(\(x) mean(x, na.rm = TRUE),
+                    \(x) sd(x, na.rm = TRUE),
+                 n = \(x) sum(!is.na(x)))
                                  )
-                             ) %>% 
+                             ) |> 
               mutate(gender = "all") # 最初に作ったデータフレームにgenderの列があるため
             )
 
 
 # dplyr 0.8.3以前
-# bfi_a %>% # 性別の結果
-#   group_by(gender) %>% 
+# bfi_a |> # 性別の結果
+#   group_by(gender) |> 
 #   summarise_at(vars(A1, A2),
 #                list(~mean(., na.rm = TRUE),
 #                       ~sd(., na.rm = TRUE),
 #                  n = ~sum(!is.na(.))
 #                     )
-#                ) %>% 
+#                ) |> 
 #   bind_rows(.,         # 上で作ったデータフレームがここに
-#             bfi_a %>%  # 全体の結果
+#             bfi_a |>  # 全体の結果
 #                 summarise_at(vars(A1, A2),
 #                              list(~mean(., na.rm = TRUE),
 #                                     ~sd(., na.rm = TRUE),
 #                                n = ~sum(!is.na(.))
 #                                  )
-#                              ) %>% 
+#                              ) |> 
 #               mutate(gender = "all") # 最初に作ったデータフレームにgenderの列があるため
 #             )
 
@@ -985,64 +1090,64 @@ bfi_a %>% # 性別の結果
 ### 要約統計量を表示させたい形式に整形する
 #### 平均値と標準偏差を列に
 ```{r}
-bfi %>% 
+bfi |> 
 summarise(across(c(A1, A2), 
-             list(mean = ~mean(., na.rm = TRUE),
-                  sd   = ~sd(., na.rm = TRUE))
+             list(mean = \(x) mean(x, na.rm = TRUE),
+                  sd   = \(x) sd(x, na.rm = TRUE))
                 )
-             ) %>% 
+             ) |> 
   pivot_longer(everything(),
                names_to = c("items", ".value"), # ".value"の部分を列名に
                names_pattern = "(.*)_(.*)") 　  # 正規表現
 
 ## 強引に縦にしてから横に
-# bfi %>% 
+# bfi |> 
 # summarise(across(c(A1, A2), 
 #              list(mean = ~mean(., na.rm = TRUE),
 #                   sd   = ~sd(., na.rm = TRUE))
 #                 )
-#              ) %>% 
-#   pivot_longer(everything()) %>% 
-#   separate(name, into = c("var_name", "summarised"), sep = "_") %>% 
+#              ) |> 
+#   pivot_longer(everything()) |> 
+#   separate(name, into = c("var_name", "summarised"), sep = "_") |> 
 #   pivot_wider(names_from = "summarised",
 #               values_from = "value")
 
 ## gather()の場合
-# bfi %>% 
+# bfi |> 
 # summarise_at(vars(A1, A2), 
 #              list(mean, sd), 
-#              na.rm = TRUE) %>% 
-#   gather() %>% 
-#   separate(key, into = c("var_name", "summarised"), sep = "_") %>% 
+#              na.rm = TRUE) |> 
+#   gather() |> 
+#   separate(key, into = c("var_name", "summarised"), sep = "_") |> 
 #   spread(summarised, value)
 ```
 
 #### 平均値と標準偏差を行に
 ```{r}
-bfi %>% 
+bfi |> 
 summarise(across(c(A1, A2), 
-             list(mean = ~mean(., na.rm = TRUE),
-                  sd   = ~sd(., na.rm = TRUE))
+             list(mean = \(x) mean(x, na.rm = TRUE),
+                  sd   = \(x) sd(x, na.rm = TRUE))
                 )
-             ) %>% 
+             ) |> 
   pivot_longer(everything(),
                names_to = c(".value", "stats"),
                names_pattern = "(.*)_(.*)") 
 
 ## 別々にデータフレームを作って統合
 # bfi_m <- 
-# bfi %>% 
+# bfi |> 
 # summarise(across(c(A1, A2), 
 #              mean, na.rm = TRUE)
 # )
 # 
 # bfi_sd <- 
-# bfi %>% summarise(across(c(A1, A2), 
+# bfi |> summarise(across(c(A1, A2), 
 #                      sd, na.rm = TRUE)
 # )
 # 
-# bind_rows(bfi_m, bfi_sd) %>%
-#   mutate(name = c("mean", "sd")) %>% 
+# bind_rows(bfi_m, bfi_sd) |>
+#   mutate(name = c("mean", "sd")) |> 
 #   select(name, everything())
 
 # 次の方法でもnameを作れる
@@ -1058,18 +1163,18 @@ summarise(across(c(A1, A2),
 
 ```{r}
 res_one_var_multi_strat <- 
-  bfi %>%
-  nest(data = -c(gender, education)) %>% 
+  bfi |>
+  nest(data = !c(gender, education)) |> 
   mutate(freq =
-           map(data, ~ tabyl(.x, A1))) %>% 
-  select(-data) %>% 
-  unnest(cols = c(freq)) %>% 
-  drop_na(education) %>% 
-  as_tibble() %>% 
+           map(data, \(x) tabyl(x, A1))) |> 
+  select(!data) |> 
+  unnest(cols = c(freq)) |> 
+  drop_na(education) |> 
+  as_tibble() |> 
   arrange(gender, education)
 
 
-res_one_var_multi_strat %>% 
+res_one_var_multi_strat |> 
   head(12)
 ```
 
@@ -1081,25 +1186,25 @@ res_one_var_multi_strat %>%
 
 ```{r}
 bfi_l <-
-  bfi %>%
-  as_tibble() %>%                    # tibble形式に変換
-  select(gender,education,A1,A2) %>% # 変数を選択
-  drop_na() %>%                      # 欠損は削除
+  bfi |>
+  as_tibble() |>                    # tibble形式に変換
+  select(gender,education,A1,A2) |> # 変数を選択
+  drop_na() |>                      # 欠損は削除
   pivot_longer(A1:A2,            # longにする変数A1:A2を指定
          names_to = "variables",
          values_to = "score")    # key = に変数名を識別する変数、value = に変数の中身を入れる
 
 
 # bfi_l <-
-#   bfi %>%
-#   as_tibble() %>%                    # tibble形式に変換
-#   select(gender,education,A1,A2) %>% # 変数を選択
-#   drop_na() %>%                      # 欠損は削除
+#   bfi |>
+#   as_tibble() |>                    # tibble形式に変換
+#   select(gender,education,A1,A2) |> # 変数を選択
+#   drop_na() |>                      # 欠損は削除
 #   gather(A1:A2,            # longにする変数A1:A2を指定
 #          key = variables,
 #          value = score)    # key = に変数名を識別する変数、value = に変数の中身を入れる
 
-bfi_l %>% head()
+bfi_l |> head()
 ```
 
 ### 確認
@@ -1107,18 +1212,18 @@ bfi_l %>% head()
 * 人数が倍になってることを確認
 
 ```{r}
-bfi_l %>%
+bfi_l |>
   count(variables)
 ```
 
 ### nestする
 ```{r}
 bfi_l_nest <-
-  bfi_l %>%
+  bfi_l |>
   nest(data = score) # 層別にする変数を指定; -c(gender,education,variables)
 
 # データ確認
-bfi_l_nest %>%
+bfi_l_nest |>
   arrange(variables,gender,education)
 ```
 
@@ -1128,15 +1233,15 @@ bfi_l_nest %>%
 
 ```{r}
 bfi_l_nest <-
-bfi_l_nest %>%
+bfi_l_nest |>
   mutate(freq =
-           map(data, ~ tabyl(.x, score)),  # データフレームは`.x`で表す; ()内は.$scoreでも動く
-         freq = map(freq, ~adorn_totals(.))) # 層別の合計人数も入れる
+           map(data, \(x) tabyl(x, score)),  # データフレームは`.x`で表す; ()内は.$scoreでも動く
+         freq = map(freq, \(x) adorn_totals(x))) # 層別の合計人数も入れる
 
 
 
 # bfi_l_nest <-
-# bfi_l_nest %>%
+# bfi_l_nest |>
 #   mutate(freq =
 #            map(data, ~ tabyl(.x, score))) # データフレームは`.x`で表す; ()内は.$scoreでも動く
 
@@ -1149,8 +1254,8 @@ bfi_l_nest
 
 ```{r}
 bfi_l_unnest <-
-bfi_l_nest %>%
-  unnest(freq) %>% 
+bfi_l_nest |>
+  unnest(freq) |> 
   arrange(gender, education)
 
 bfi_l_unnest
@@ -1158,22 +1263,22 @@ bfi_l_unnest
 
 #### 一致しているか確認
 ```{r}
-bfi %>%
-  drop_na(gender,education,A1,A2) %>%  # nestデータと同様の条件にするため
-  filter(gender == 1 & education == 1) %>%
+bfi |>
+  drop_na(gender,education,A1,A2) |>  # nestデータと同様の条件にするため
+  filter(gender == 1 & education == 1) |>
   tabyl(A1) 
 
 # ネストしたデータセットから
-bfi_l_unnest %>%
+bfi_l_unnest |>
   filter(gender == 1 & education == 1 & variables == "A1")
 
 
-bfi %>% 
-  drop_na(gender,education,A1,A2) %>%
-  filter(gender == 2 & education == 3) %>%
+bfi |> 
+  drop_na(gender,education,A1,A2) |>
+  filter(gender == 2 & education == 3) |>
   tabyl(A2)
 
-bfi_l_unnest %>%
+bfi_l_unnest |>
   filter(gender == 2 & education == 3 & variables == "A2")
 ```
 
@@ -1181,16 +1286,16 @@ bfi_l_unnest %>%
 ```{r}
 
 bfi_l_nest <-
-  bfi_l_nest %>%
+  bfi_l_nest |>
   mutate(
          freq = map(freq, 
-                    ~ pivot_wider(.x, names_from = "score",
+                    \(x) pivot_wider(x, names_from = "score",
                                   values_from = c("percent", "n")) # ,names_prefix = "score"
                     ) # wideに変換
   )
 
 # bfi_l_nest <-
-#   bfi_l_nest %>%
+#   bfi_l_nest |>
 #   mutate(freq =
 #            map(freq, ~ select(.x, -n)),  # nの列を削除
 #          freq =                          # wideに変換
@@ -1198,20 +1303,20 @@ bfi_l_nest <-
 #   )
 
 bfi_l_unnestw <-
-bfi_l_nest %>%
-  unnest(c(freq)) %>% 
+bfi_l_nest |>
+  unnest(c(freq)) |> 
   select(-data)
 
 bfi_l_unnestw <- 
-  bfi_l_unnestw %>% 
+  bfi_l_unnestw |> 
   mutate(across(percent_1:percent_6,
-            list(~round(.,digits = 2)))
-  ) %>% 
+            list(\(x) round(x, digits = 2)))
+  ) |> 
   arrange(gender, education)
 
 # 確認用
 check_res1 <- 
-  bfi_l_unnestw %>% 
+  bfi_l_unnestw |> 
   filter(gender == 1 & education == 1 & variables == "A1")
 
 
@@ -1224,21 +1329,21 @@ DT::datatable(bfi_l_unnestw)
 
 ```{r}
 bfi_nsum <-
-bfi %>%
-select(gender,education,A1,A2) %>%
-  drop_na() %>% 
+bfi |>
+select(gender,education,A1,A2) |>
+  drop_na() |> 
   pivot_longer(
     !c(gender, education),
-    names_to = "variables") %>%
-  count(gender, education, variables, value) %>%
-  group_by(gender, education, variables) %>%
-  mutate(percent = n / sum(n)) %>%
+    names_to = "variables") |>
+  count(gender, education, variables, value) |>
+  group_by(gender, education, variables) |>
+  mutate(percent = n / sum(n)) |>
   ungroup()
 
 
 # 確認用
 check_res2 <-
-  bfi_nsum %>%
+  bfi_nsum |>
    filter(gender == 1 & education == 1 & variables == "A1")
 
 check_res2
@@ -1248,13 +1353,13 @@ check_res2
 ### 層別変数を関数内に組み込みver
 ```{r}
 fnest_tabyl <- function(df, outcome_var){
-df %>%
-  nest(data = -c(gender, education)) %>% # あらかじめ層別変数を指定しておく
+df |>
+  nest(data = !c(gender, education)) |> # あらかじめ層別変数を指定しておく
   mutate(freq =
-           map(data, ~ tabyl(.x, {{outcome_var}}, show_na = FALSE))) %>% # show_na = FALSEで欠損無しのpercentのみ算出
-  select(-data) %>% 
-  unnest(cols = c(freq)) %>% 
-  # drop_na(education) %>% 
+           map(data, \(x) tabyl(x, {{outcome_var}}, show_na = FALSE))) |> # show_na = FALSEで欠損無しのpercentのみ算出
+  select(-data) |> 
+  unnest(cols = c(freq)) |> 
+  # drop_na(education) |> 
   as_tibble()
 }  
 
@@ -1262,7 +1367,7 @@ df %>%
 fnest_tabyl(bfi, A1)
 
 # 複数変数
-map(c("A1", "A2"), ~fnest_tabyl(bfi, .))
+map(c("A1", "A2"), \(x) fnest_tabyl(bfi, x))
 ```
 
 ### 層別変数も引数で指定ver
@@ -1271,13 +1376,13 @@ map(c("A1", "A2"), ~fnest_tabyl(bfi, .))
 
 ```{r}
 nest_tabyl <- function(df, outcome_var, nest_vars = NULL){
-df %>%
-  nest(data = -{{nest_vars}}) %>% 
+df |>
+  nest(data = !{{nest_vars}}) |> 
   mutate(freq =
-           map(data, ~ tabyl(.x, {{outcome_var}}, show_na = FALSE))) %>% 
-  select(-data) %>% 
-  unnest(cols = c(freq)) %>% 
-  # drop_na(education) %>% 
+           map(data, \(x) tabyl(x, {{outcome_var}}, show_na = FALSE))) |> 
+  select(!data) |> 
+  unnest(cols = c(freq)) |> 
+  # drop_na(education) |> 
   as_tibble()
 }  
 
@@ -1290,13 +1395,13 @@ nest_tabyl(bfi, A1, c("gender", "education"))
 
 # 複数層別，複数変数
 res_sf <- 
-quos(c(gender,education)) %>% 
-  map2(c("A1", "A2"), ~nest_tabyl(bfi, .y,  !!.x))
+quos(c(gender,education)) |> 
+  map2(c("A1", "A2"), \(x, y) nest_tabyl(bfi, y,  !!x))
 
 res_sf <- 
-res_sf %>% 
-  map(~drop_na(., education)) %>% 
-  map(~arrange(., gender, education))
+res_sf |> 
+  map(\(x) drop_na(x, education)) |> 
+  map(\(x) arrange(x, gender, education))
 
 
 ```
@@ -1305,14 +1410,14 @@ res_sf %>%
 ```{r}
 
 # 1つの項目の頻度を複数層別で確認するためにデータ構造変換
-res_one_var_multi_strat %>% head(12)
+res_one_var_multi_strat |> head(12)
 
 
 # tabylじゃなくてpercent = n / sum(n)の場合
 check_res2
 
 # 層別変数も引数で指定ver
-res_sf[[1]] %>% head()
+res_sf[[1]] |> head()
 
 ```
 
@@ -1321,8 +1426,8 @@ res_sf[[1]] %>% head()
 ## 層別平均値の棒グラフ
 ```{r}
 mean_total_a <- 
-bfi_a %>% 
-  group_by(education) %>% 
+bfi_a |> 
+  group_by(education) |> 
   summarise(total_a = mean(total_a, na.rm = TRUE)) 
 
 ggplot(mean_total_a) +
@@ -1377,9 +1482,9 @@ ggplot(mean_total_a) +
 ## 層別（2要因）の平均値の棒グラフ
 ```{r}
 mean_total_b <- 
-bfi_a %>% 
-  group_by(gender,education) %>% 
-  summarise(total_a = mean(total_a, na.rm = TRUE)) %>% 
+bfi_a |> 
+  group_by(gender,education) |> 
+  summarise(total_a = mean(total_a, na.rm = TRUE)) |> 
   ungroup()
 
 ggplot(mean_total_b, aes(x = education, y = total_a, fill = gender)) +
@@ -1415,13 +1520,13 @@ ggplot(mean_total_b, aes(x = fct_reorder2(education, gender, total_a,           
 #### 被ったバージョン
 ```{r}
 mean_all <- 
-  bfi_a %>% 
-  summarise(total_a = mean(total_a, na.rm = TRUE)) %>% 
+  bfi_a |> 
+  summarise(total_a = mean(total_a, na.rm = TRUE)) |> 
   pull()
 
 mean_total_b <- 
-bfi_a %>% 
-  group_by(gender,education) %>% 
+bfi_a |> 
+  group_by(gender,education) |> 
   summarise(total_a = mean(total_a, na.rm = TRUE)) 
 
 ggplot(mean_total_b, aes(x = education, y = total_a, fill = gender)) +
@@ -1460,8 +1565,8 @@ ggplot(mean_total_b, aes(x = education, y = total_a, fill = gender)) +
 ## legendのラベルの順序変更
 ```{r eval=FALSE, include=FALSE}
 total_a_gender <- 
-bfi_a %>% 
- group_by(gender) %>% 
+bfi_a |> 
+ group_by(gender) |> 
   summarise(mean_total_a = mean(total_a, na.rm = TRUE))
 
 ggplot(total_a_gender) +
@@ -1480,14 +1585,14 @@ ggplot(total_a_gender) +
   scale_shape_discrete(breaks = c("female", "male"))
 
 # A1to5_gender <- 
-# bfi_a %>% 
-#  group_by(gender) %>% 
+# bfi_a |> 
+#  group_by(gender) |> 
 #   summarise_at(vars(A1r, A2:A5),
 #     list(~mean(., na.rm = TRUE))
 #     )
 # 
 # A1to5_gender_long <- 
-#   A1to5_gender %>% 
+#   A1to5_gender |> 
 #   gather(A1r:A5, 
 #          key = variables,
 #         value = mean)
@@ -1518,9 +1623,9 @@ ggplot(bfi, aes(A1)) +
 
 ```{r}
 bfi_long <- 
-bfi %>%
-  select(A1:E5, gender:age) %>% 
-  gather(A1:E5, key = "items", value = "answer") %>% 
+bfi |>
+  select(A1:E5, gender:age) |> 
+  gather(A1:E5, key = "items", value = "answer") |> 
   as_tibble()
 
 ggplot(bfi_long) +
@@ -1620,7 +1725,7 @@ pie(rep(1, length(many_col)), col = many_col, main = "")
 # waffleパッケージをここだけで一時的に読んでいるためwaffle::としている
 
 
-bfi %>% 
+bfi |> 
   tabyl(gender)
 
 parts <- c(male = 33, female = 67)
@@ -1653,10 +1758,10 @@ personograph::personograph(parts,
 library(likert)
 
 bfi_lik <- 
-bfi_a %>% 
-  select(A1r, A2:A5) %>% 
-  mutate(across(everything(), factor)) %>% 
-  as.data.frame() %>% # data.frame形式
+bfi_a |> 
+  select(A1r, A2:A5) |> 
+  mutate(across(everything(), factor)) |> 
+  as.data.frame() |> # data.frame形式
   likert()
 
 plot(bfi_lik)
@@ -1677,16 +1782,16 @@ plot(bfi_lik, type = "heat")
 ### 層別
 ```{r}
 bfi_a <- 
-  bfi_a %>% 
+  bfi_a |> 
  mutate(gender = factor(gender),
    gender = fct_recode(gender,
                             males = "1", females = "2"))  #Males = 1, Females =2
 
 bfi_lik_gen <- 
-bfi_a %>% 
-  select(A1r, A2:A5) %>% 
-  mutate(across(everything(), factor)) %>% 
-  as.data.frame() %>% # data.frame形式
+bfi_a |> 
+  select(A1r, A2:A5) |> 
+  mutate(across(everything(), factor)) |> 
+  as.data.frame() |> # data.frame形式
   likert(grouping = bfi_a$gender)
 
 
@@ -1704,8 +1809,8 @@ cor(bfi$A2, bfi$A3, use = "complete.obs")
 
 ## 相関行列
 ```{r}
-bfi %>% 
-select(A1:A5) %>% 
+bfi |> 
+select(A1:A5) |> 
 cor(use = "complete.obs")
 ```
 
@@ -1724,8 +1829,8 @@ library(corrr)
 
 ```{r}
 res <- 
-bfi %>% 
-  select(A2, A3) %>% 
+bfi |> 
+  select(A2, A3) |> 
   polychoric( na.rm = TRUE)
 
 res
@@ -1736,9 +1841,9 @@ res$rho
 res$rho[1,2]
 
 # 因子型にした場合（結果は同じ）
-# bfi %>% 
-#   select(A2, A3) %>% 
-#   mutate_all(factor) %>% 
+# bfi |> 
+#   select(A2, A3) |> 
+#   mutate_all(factor) |> 
 #   polychoric( na.rm = TRUE)
 
 ```
@@ -1759,7 +1864,7 @@ ltm::biserial.cor(bfi_a$total_a, bfi_a$gender, use = "complete.obs")
 ```{r}
 # ピアソンの積率相関で出した場合
 bfi_a <- 
-  bfi_a %>% 
+  bfi_a |> 
   mutate(gender_n = as.numeric(gender))
 
 cor(bfi_a$total_a, bfi_a$gender_n, use = "complete.obs")
@@ -1774,9 +1879,9 @@ library(broom)
 
  
 bfi_n <- 
-bfi %>%
-  as_tibble %>% 
-  nest(-gender)
+bfi |>
+  as_tibble() |> 
+  nest(!c(gender))
 
 bfi_n
 ```
@@ -1792,24 +1897,31 @@ detach("package:pals", unload=TRUE)
 
 
 ```{r}
-bfi_n <-
-bfi_n %>% 
+
+bfi_n |> 
   mutate(
-    fit = map(data, ~ lm(A5 ~ A1 + A4, data = .))
+    fit = map(data, \(x) lm(A5 ~ A1 + A4, data = x))
               ) 
+
+# purrr 1.0.0より前
+# bfi_n <-
+# bfi_n  %>%
+#   mutate(
+#     fit = map(data, ~ lm(A5 ~ A1 + A4, data = .))) 
+
 bfi_n
 
 
 ## 古いやり方
 # fit <- 
-#   bfi %>% 
-#   group_by(gender) %>% 
+#   bfi |> 
+#   group_by(gender) |> 
 #   do(data = lm(A5 ~ A1 + A4 ,
-#                data = .) %>%
+#                data = .) |>
 #        tidy()
 #   ) 
 # res_fit <- 
-#   bfi_n %>% 
+#   bfi_n |> 
 #   unnest()
 
 ```
@@ -1818,30 +1930,30 @@ bfi_n
 ### ネストを解除して回帰係数を出力
 ```{r}
 res_fit <-
-bfi_n %>%
-  mutate(fit = map(fit, tidy)) %>% 
-  unnest(fit) %>% 
-  select(-data)
+bfi_n |>
+  mutate(fit = map(fit, tidy)) |> 
+  unnest(fit) |> 
+  select(!data)
 
 
 # tidyr 0.8.3までのやり方
 # res_fit <-
-# bfi_n %>%
-#   unnest(fit %>% map(tidy))
+# bfi_n |>
+#   unnest(fit |> map(tidy))
 
 res_fit
 ```
 
 ### ネストを解除してR二乗を出力
 ```{r}
-bfi_n %>%
-  mutate(fit = map(fit, glance)) %>% 
-  unnest(fit) %>% 
-  select(-data)
+bfi_n |>
+  mutate(fit = map(fit, glance)) |> 
+  unnest(fit) |> 
+  select(!data)
 
 
-# bfi_n %>%
-#   unnest(fit %>% map(glance))
+# bfi_n |>
+#   unnest(fit |> map(glance))
 ```
 
 
@@ -1854,8 +1966,8 @@ bfi_n %>%
 
 ## 回帰係数を棒グラフで表示
 ```{r}
-res_fit %>% 
-  filter(term != "(Intercept)") %>% 
+res_fit |> 
+  filter(term != "(Intercept)") |> 
   ggplot(aes(x = term, y = estimate)) +
   geom_col(fill = "blue") +
   geom_text(aes(label = round(estimate,2),
@@ -1874,19 +1986,19 @@ res_fit %>%
 ## 回帰係数と信頼区間を表示
 ```{r}
 res_fit <-  
-bfi_n %>%
-  mutate(fit = map(fit, tidy, conf.int = TRUE)) %>% 
-  unnest(fit) %>% 
-  select(-data)
+bfi_n |>
+  mutate(fit = map(fit, tidy, conf.int = TRUE)) |> 
+  unnest(fit) |> 
+  select(!data)
 
 
 # res_fit <-  
-# bfi_n %>%
-#   unnest(fit %>% map(tidy, conf.int = TRUE))
+# bfi_n |>
+#   unnest(fit |> map(tidy, conf.int = TRUE))
 
 
-res_fit %>% 
-  filter(term != "(Intercept)") %>% 
+res_fit |> 
+  filter(term != "(Intercept)") |> 
   ggplot(aes(x = term, y = estimate)) +
   geom_pointrange(aes(ymin = conf.low, ymax = conf.high)) +
   geom_text(aes(label = round(estimate,2),
@@ -1908,22 +2020,22 @@ res_fit %>%
 ```{r}
 # 対象となるアウトカムをオブジェクトに
 outcomes <- 
-  bfi %>% 
-  select(A3:A5) %>% 
+  bfi |> 
+  select(A3:A5) |> 
   names()
 
 # それぞれの回帰を実行しリストに格納
 res_l <- 
-outcomes %>% 
+outcomes %>% # native pipeが使えないので 
   str_c(., "~ A1 + A2") %>%
-  map(~lm(as.formula(.x), data= bfi)) %>% 
+  map(\(x) lm(as.formula(x), data = bfi)) |> 
   set_names(outcomes)
 ```
 
 ## 結果を1つのデータフレームにまとめる
 ```{r}
 res_l %>% 
-  map(~tidy(., conf.int = TRUE)) %>% 
+  map(\(x) tidy(x, conf.int = TRUE)) |> 
   bind_rows(.id = "outcome")
 ```
 
@@ -1935,7 +2047,7 @@ res_l %>%
 
 ```{r}
 bfi_only <- 
-  bfi %>% 
+  bfi |> 
   select(A1:O5)
 
 
@@ -1943,12 +2055,12 @@ bfi_only$all_same <-
   apply(bfi_only, 1, function(row) all(row == row[1]))
 
 
-bfi_only %>%
+bfi_only |>
   count(all_same)
 
 # 次のパッケージで検討のため削除
 bfi_only <- 
-  bfi_only %>% 
+  bfi_only |> 
   select(!all_same)
 ```
 
@@ -1960,14 +2072,14 @@ bfi_only <-
 
 ```{r}
 
-bfi_only %>% 
-careless::irv() %>% 
+bfi_only |> 
+careless::irv() |> 
   enframe(name = "id", value = "sd")
 
 
 # 全体 + 分割して算出（回答の前半と後半で比べるとか）
-bfi_only %>% 
-careless::irv(split = TRUE, num.split = 4) %>% 
+bfi_only |> 
+careless::irv(split = TRUE, num.split = 4) |> 
   head()
 
 ```
@@ -1991,7 +2103,7 @@ factor_items <-
 
 # 各因子に対応する項目のみのdfのリスト作成
 bfi_by_factor <- 
-    map(factor_items, ~select(bfi_added, all_of(.)))
+    map(factor_items, \(x) select(bfi_added, all_of(x)))
 
 # 各dfでalpha()実行
 res <-
@@ -2000,50 +2112,50 @@ res <-
 
 # 各結果からtotal要素を抜き出す
 res_alpha <-
-  map_df(res, "total", .id = "factor") %>%  # 必要なのはraw_alpha
+  map_df(res, "total", .id = "factor") |>  # 必要なのはraw_alpha
   select(factor, alpha = raw_alpha, factor_mean = mean, factor_sd = sd)
 
 
 # 各結果からalpha.drop要素を抜き出す
 alpha_item_del <-
-  map_df(res, "alpha.drop", .id = "factor") %>%
-  select(factor, alpha_if_del = raw_alpha) %>%
+  map_df(res, "alpha.drop", .id = "factor") |>
+  select(factor, alpha_if_del = raw_alpha) |>
   rownames_to_column(var = "item")
 
 # 各結果からitem.stats要素を抜き出す
 ir <-
-  map_df(res, "item.stats", .id = "factor") %>%
-  select(factor, r.drop, mean, sd) %>%
+  map_df(res, "item.stats", .id = "factor") |>
+  select(factor, r.drop, mean, sd) |>
   rownames_to_column(var = "item")
 
 # 各結果からresponse.freq要素を抜き出す（数値の列名がうまく読み込めないので一度mapで処理）
 freq <-
-  map(res, "response.freq") %>%
-  map(~as_tibble(., rownames = "item")) %>%
-  map(~select(., item,
+  map(res, "response.freq") |>
+  map(\(x) as_tibble(x, rownames = "item")) |>
+  map(\(x) select(x, item,
                answer_1 = "1",
                answer_2 = "2",
                answer_3 = "3",
-               answer_4 = "4")) %>%
+               answer_4 = "4")) |>
   bind_rows()
 
 
 
 # 連結
 res_alpha_df <-
-alpha_item_del %>%
-  left_join(ir) %>%
-  left_join(freq) %>%
+alpha_item_del |>
+  left_join(ir) |>
+  left_join(freq) |>
   left_join(res_alpha)
 
 
 
 # 変数並び変え
 res_alpha_df <-
-  res_alpha_df %>%
+  res_alpha_df |>
   relocate(factor, item, factor_mean, factor_sd, alpha, alpha_if_del, r.drop, mean, sd, answer_1:answer_4)
 
-res_alpha_df %>% 
+res_alpha_df |> 
   head()
 
 
@@ -2054,35 +2166,35 @@ rm(factor_items,alpha_item_del, ir, freq, res_alpha, res_alpha_df)
 
 ## 確認
 ```{r}
-bfi_added %>% 
-  select(A2:A5, A1_r) %>% 
-  drop_na() %>% 
-  mutate(agree = rowMeans(across(everything(), na.rm = TRUE))) %>% 
+bfi_added |> 
+  select(A2:A5, A1_r) |> 
+  drop_na() |> 
+  mutate(agree = rowMeans(across(everything(), na.rm = TRUE))) |> 
   summarise(across(c(agree),
-                  list(mean = ~mean(., na.rm = TRUE),
-                       sd   = ~sd(., na.rm = TRUE),
-                       n    = ~sum(!is.na(.)))
+                  list(mean = \(x) mean(x, na.rm = TRUE),
+                       sd   = \(x) sd(x, na.rm = TRUE),
+                       n    = \(x) sum(!is.na(x)))
                   )
            )
 
 
 res_drop <-
-  map(bfi_by_factor, drop_na) %>% # 因子ごとにそれぞれリストワイズ
+  map(bfi_by_factor, drop_na) |> # 因子ごとにそれぞれリストワイズ
   map(alpha)
 
 
 # 各結果からtotal要素を抜き出す
-  map_df(res_drop, "total", .id = "factor") %>%  # 必要なのはraw_alpha
+  map_df(res_drop, "total", .id = "factor") |>  # 必要なのはraw_alpha
   select(factor, factor_mean = mean, factor_sd = sd)
 
 
 
-bfi_added %>% 
-drop_na(A2) %>%   
+bfi_added |> 
+drop_na(A2) |>   
  summarise(across(c(A2),
-                  list(mean = ~mean(., na.rm = TRUE),
-                       sd   = ~sd(., na.rm = TRUE),
-                       n    = ~sum(!is.na(.)))
+                  list(mean = \(x) mean(x, na.rm = TRUE),
+                       sd   = \(x) sd(x, na.rm = TRUE),
+                       n    = \(x) sum(!is.na(x)))
                   )
            )
 
@@ -2146,10 +2258,10 @@ fitMeasures(fit,c("cfi","tli",
                 "srmr"))
 # 整形
 res_fit <- 
-res_fit %>% 
-  enframe() %>% 
+res_fit |> 
+  enframe() |> 
   mutate(value = as.numeric(value))
-# %>% 
+# |> 
 #   add_row(name = NA_character_, 
 #           value = NA_real_, 
 #           .after = 7) # 空白行作成（csvに追記していくときに便利）
