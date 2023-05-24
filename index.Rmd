@@ -104,6 +104,7 @@ dat <- read_csv(".csv", locale = locale(encoding = "CP932"))
 ```{r message=FALSE}
 library(tidyverse)
 library(psych)
+library(psychotools)
 library(skimr) # データセットの要約を詳細に確認するため
 library(knitr)
 library(janitor)
@@ -147,6 +148,9 @@ names(bfi)
 * 以下のコードでbfi_aのデータセットを使うので，ここの実行は必須
 
 ```{r warning=FALSE, paged.print=FALSE}
+data(bfi)
+
+
 bfi_a <- bfi |>
   select(A1:A5,gender,education,age) |> 
   as_tibble()
@@ -1890,14 +1894,14 @@ bfi_n
 
 * 上から読んでいったら，`Error: Corrupt x: no names`が出たので，`map()`とぶつかりそうなパッケージをここで外す
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 detach("package:pals", unload=TRUE)
 # detach("package:maps", unload=TRUE) # 先にpalsを外さないと×
 ```
 
 
 ```{r}
-
+bfi_n <- 
 bfi_n |> 
   mutate(
     fit = map(data, \(x) lm(A5 ~ A1 + A4, data = x))
@@ -1957,10 +1961,17 @@ bfi_n |>
 ```
 
 
-## (作成中)層別に重回帰(group_map)
+## 層別に重回帰(group_modify)
 
 ```{r eval=FALSE, include=FALSE}
+bfi |> 
+  group_by(gender) |> 
+  group_modify(~tidy(lm(A5 ~ A1 + A4, data = .x)))
 
+
+# bfi |> 
+#   group_by(gender) |> 
+#   group_modify(\(x, y) tidy(lm(A5 ~ A1 + A4, data = x)))
 ```
 
 
@@ -2165,11 +2176,11 @@ rm(factor_items,alpha_item_del, ir, freq, res_alpha, res_alpha_df)
 ```
 
 ## 確認
-```{r}
+```{r eval=FALSE, include=FALSE}
 bfi_added |> 
   select(A2:A5, A1_r) |> 
   drop_na() |> 
-  mutate(agree = rowMeans(across(everything(), na.rm = TRUE))) |> 
+  mutate(agree = rowMeans(pick(everything()), na.rm = TRUE)) |> 
   summarise(across(c(agree),
                   list(mean = \(x) mean(x, na.rm = TRUE),
                        sd   = \(x) sd(x, na.rm = TRUE),
